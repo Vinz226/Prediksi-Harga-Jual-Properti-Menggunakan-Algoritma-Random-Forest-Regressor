@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Prediksi Harga Properti{% endblock %}
+
+{% block extra_css %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+
+    :root {
+        --primary: #1E3A5F;
+        --primary-light: #2c5a8c;
+        --primary-pale: #eef3fa;
+        --border: #e8ecf0;
+        --border-soft: #f1f5f9;
+        --text-main: #1a2332;
+        --text-muted: #64748b;
+        --text-hint: #94a3b8;
+    }
+
+    *, body { font-family: 'DM Sans', 'Segoe UI', sans-serif; }
+    h1,h2,h3,h4,h5,h6 { font-family: 'Sora', sans-serif; letter-spacing: -0.02em; }
+
+    .register-wrap {
+        min-height: 82vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 16px;
+    }
+
+    .register-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 40px 38px;
+        width: 100%;
+        max-width: 420px;
+    }
+
+    .register-brand {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+
+    .brand-icon {
+        width: 56px;
+        height: 56px;
+        background: var(--primary);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+    }
+
+    .brand-icon i { color: white; font-size: 22px; }
+
+    .register-brand h3 {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 5px;
+    }
+
+    .register-brand p {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin: 0;
+    }
+
+    .form-label-custom {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 7px;
+        display: block;
+    }
+
+    .input-wrap { position: relative; }
+
+    .input-icon {
+        position: absolute;
+        left: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-hint);
+        font-size: 13px;
+        pointer-events: none;
+    }
+
+    .form-control-custom {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 11px 14px 11px 38px;
+        font-size: 13px;
+        font-family: 'DM Sans', sans-serif;
+        color: var(--text-main);
+        background: white;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .form-control-custom:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(30,58,95,0.08);
+        outline: none;
+    }
+
+    .form-control-custom::placeholder { color: var(--text-hint); }
+
+    .password-hint {
+        font-size: 11px;
+        color: var(--text-hint);
+        margin-top: 5px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .divider {
+        border: none;
+        border-top: 1px solid var(--border-soft);
+        margin: 24px 0;
+    }
+
+    .btn-register {
+        width: 100%;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 13px;
+        font-size: 14px;
+        font-weight: 700;
+        font-family: 'Sora', sans-serif;
+        letter-spacing: -0.01em;
+        cursor: pointer;
+        transition: background 0.15s, transform 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-register:hover {
+        background: var(--primary-light);
+        transform: translateY(-1px);
+    }
+
+    .btn-register i { font-size: 13px; }
+
+    .login-link {
+        text-align: center;
+        margin-top: 22px;
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .login-link a {
+        color: var(--primary);
+        font-weight: 600;
+        text-decoration: none;
+        transition: opacity 0.15s;
+    }
+
+    .login-link a:hover { opacity: 0.75; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="register-wrap">
+    <div class="register-card">
+
+        <div class="register-brand">
+            <div class="brand-icon">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <h3>Buat Akun Baru</h3>
+            <p>Daftar untuk mulai memprediksi harga properti</p>
+        </div>
+
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label-custom">Nama Lengkap</label>
+                <div class="input-wrap">
+                    <i class="fas fa-user input-icon"></i>
+                    <input type="text" name="name" class="form-control-custom"
+                           placeholder="Nama lengkap kamu" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label-custom">Email</label>
+                <div class="input-wrap">
+                    <i class="fas fa-envelope input-icon"></i>
+                    <input type="email" name="email" class="form-control-custom"
+                           placeholder="email@contoh.com" required>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label-custom">Password</label>
+                <div class="input-wrap">
+                    <i class="fas fa-lock input-icon"></i>
+                    <input type="password" name="password" class="form-control-custom"
+                           placeholder="Minimal 6 karakter" required>
+                </div>
+                <p class="password-hint">
+                    <i class="fas fa-shield-alt"></i>Gunakan kombinasi huruf dan angka
+                </p>
+            </div>
+
+            <button type="submit" class="btn-register">
+                <i class="fas fa-user-plus"></i>Buat Akun
+            </button>
+        </form>
+
+        <hr class="divider">
+
+        <div class="login-link">
+            Sudah punya akun? <a href="{{ url_for('login') }}">Masuk sekarang</a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,484 @@
+{% extends "base.html" %}
+
+{% block title %}Prediksi Harga - Properti Prediksi Malang{% endblock %}
+
+{% block extra_css %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+
+    :root {
+        --primary: #1E3A5F;
+        --primary-light: #2c5a8c;
+        --primary-pale: #eef3fa;
+        --success: #16a34a;
+        --success-light: #f0fdf4;
+        --warning: #b45309;
+        --warning-light: #fffbeb;
+        --danger: #dc2626;
+        --info: #0369a1;
+        --info-light: #f0f9ff;
+        --gray-bg: #f4f6f9;
+        --border: #e8ecf0;
+        --border-soft: #f1f5f9;
+        --text-main: #1a2332;
+        --text-muted: #64748b;
+        --text-hint: #94a3b8;
+    }
+
+    *, body { font-family: 'DM Sans', 'Segoe UI', sans-serif; }
+    h1, h2, h3, h4, h5, h6 { font-family: 'Sora', sans-serif; letter-spacing: -0.02em; }
+
+    .welcome-section {
+        background: var(--primary); border-radius: 18px; padding: 24px 28px;
+        color: white; margin-bottom: 24px; display: flex;
+        justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+    }
+    .welcome-section h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .welcome-section p { font-size: 13px; opacity: 0.75; margin: 0; }
+    .user-pill {
+        display: flex; align-items: center; gap: 7px;
+        background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.15);
+        padding: 7px 16px; border-radius: 40px; font-size: 12px; font-weight: 500;
+    }
+
+    .section-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+    }
+    .section-header h4 {
+        font-size: 15px; font-weight: 600; color: var(--text-main);
+        margin: 0; display: flex; align-items: center; gap: 8px;
+    }
+    .section-header h4 i { color: var(--primary); font-size: 14px; }
+
+    .model-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .model-option {
+        background: white; border: 1px solid var(--border); border-radius: 14px;
+        padding: 16px; cursor: pointer; transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+        text-decoration: none; color: inherit; display: block; position: relative;
+    }
+    .model-option:hover { box-shadow: 0 8px 24px rgba(30,58,95,0.08); transform: translateY(-2px); color: inherit; }
+    .model-option.active { border-color: var(--success); background: var(--success-light); }
+    .model-option.best { border-color: #fde68a; background: #fffdf0; }
+    .model-name {
+        font-family: 'Sora', sans-serif; font-weight: 700; font-size: 13px;
+        color: var(--text-main); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .model-metrics { display: flex; gap: 6px; font-size: 11px; flex-wrap: wrap; }
+    .metric-badge {
+        background: var(--border-soft); padding: 4px 10px; border-radius: 20px;
+        color: var(--text-muted); font-weight: 500;
+    }
+    .metric-badge i { color: var(--primary); margin-right: 3px; }
+
+    .best-badge {
+        position: absolute; top: -8px; right: 14px; background: #fef9c3; color: #854d0e;
+        border: 1px solid #fde68a; padding: 3px 10px; border-radius: 20px;
+        font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+
+    .rank-badge {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 22px; height: 22px; border-radius: 7px; font-size: 10px; font-weight: 700;
+        flex-shrink: 0; background: #f1f5f9; color: var(--text-muted);
+    }
+    .rank-1 { background: #fef9c3; color: #854d0e; }
+    .rank-2 { background: #f1f5f9; color: #475569; }
+    .rank-3 { background: #fef3e2; color: #92400e; }
+
+    .info-alert {
+        background: var(--info-light); border: 1px solid #bae6fd; border-radius: 12px;
+        padding: 13px 18px; font-size: 13px; color: var(--info); margin-bottom: 24px;
+    }
+    .info-alert strong { color: var(--primary); }
+
+    .card-custom {
+        background: white; border: 1px solid var(--border); border-radius: 14px;
+        padding: 22px; margin-bottom: 20px; transition: box-shadow 0.2s;
+    }
+    .card-custom:hover { box-shadow: 0 8px 24px rgba(30,58,95,0.07); }
+    .card-custom h5 {
+        font-size: 14px; font-weight: 700; color: var(--text-main);
+        margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+    }
+    .card-custom h5 i { color: var(--primary); }
+
+    .form-label-custom {
+        font-weight: 600; font-size: 12px; color: var(--text-muted);
+        margin-bottom: 7px; display: flex; align-items: center; gap: 6px;
+        text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .form-label-custom i { color: var(--primary); font-size: 11px; }
+    .option-count {
+        font-size: 10px; color: var(--text-hint); font-weight: 500;
+        margin-left: auto; background: var(--border-soft); padding: 2px 8px; border-radius: 10px;
+    }
+
+    .form-control-custom, .form-select-custom {
+        border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px;
+        font-size: 13px; font-family: 'DM Sans', sans-serif; transition: border-color 0.15s, box-shadow 0.15s;
+        background: white; width: 100%; color: var(--text-main);
+    }
+    .form-control-custom:focus, .form-select-custom:focus {
+        border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,58,95,0.08); outline: none;
+    }
+
+    .btn-predict {
+        background: var(--success); color: white; border: none; border-radius: 10px;
+        padding: 13px; font-weight: 700; font-size: 14px; font-family: 'Sora', sans-serif;
+        letter-spacing: -0.01em; transition: background 0.15s, transform 0.15s;
+        width: 100%; cursor: pointer; margin-top: 4px;
+    }
+    .btn-predict:hover { background: #15803d; color: white; transform: translateY(-1px); }
+
+    .result-card { background: var(--primary); border-radius: 14px; color: white; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+    .result-header { padding: 20px 22px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .result-header h5 { font-size: 14px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px; color: white; }
+    .model-badge-inline {
+        display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.15); padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 500;
+    }
+    .result-price-section { padding: 22px; text-align: center; background: rgba(0,0,0,0.12); }
+    .result-price-label { font-size: 12px; opacity: 0.7; margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+    .result-price { font-family: 'Sora', sans-serif; font-size: 42px; font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; word-break: break-word; }
+    .result-body { padding: 20px 22px; flex: 1; }
+    .detail-section { margin-bottom: 18px; }
+    .detail-section-title { font-size: 11px; font-weight: 700; margin-bottom: 10px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: center; gap: 6px; }
+    .detail-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .detail-item-box { background: rgba(255,255,255,0.09); border-radius: 10px; padding: 11px 13px; }
+    .detail-item-label { font-size: 10px; opacity: 0.65; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 5px; }
+    .detail-item-value { font-size: 14px; font-weight: 600; font-family: 'Sora', sans-serif; }
+
+    .validation-section { background: rgba(255,255,255,0.07); border-radius: 12px; padding: 14px 16px; margin-top: 14px; border-left: 3px solid var(--success); }
+    .validation-title { font-size: 11px; font-weight: 700; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: center; gap: 6px; opacity: 0.85; }
+    .validation-title i { color: #4ade80; }
+    .validation-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .validation-row:last-child { border-bottom: none; }
+    .validation-row .label { opacity: 0.75; }
+    .validation-row .value { font-weight: 600; }
+    .validation-row.highlight { background: rgba(74,222,128,0.12); margin: 4px -8px; padding: 7px 12px; border-radius: 8px; border-bottom: none; }
+
+    .accuracy-badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .accuracy-excellent { background: #16a34a; color: white; }
+    .accuracy-good { background: #0369a1; color: white; }
+    .accuracy-fair { background: #b45309; color: white; }
+    .accuracy-poor { background: #dc2626; color: white; }
+
+    .model-perf { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; }
+    .model-perf span { font-size: 11px; opacity: 0.65; }
+    .model-perf strong { font-size: 11px; font-weight: 600; opacity: 0.9; }
+
+    .empty-state { text-align: center; padding: 60px 20px; }
+    .empty-state i { font-size: 40px; color: var(--text-hint); margin-bottom: 16px; display: block; }
+    .empty-state h5 { font-size: 15px; font-weight: 600; color: var(--text-main); margin-bottom: 6px; }
+    .empty-state p { font-size: 13px; color: var(--text-muted); margin: 0; }
+
+    .model-info-table { width: 100%; border-collapse: separate; border-spacing: 0 6px; }
+    .model-info-table thead th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-hint); font-weight: 600; padding: 0 14px 8px; }
+    .model-info-table tbody td { padding: 11px 14px; background: var(--border-soft); font-size: 13px; color: var(--text-main); }
+    .model-info-table tbody td:first-child { border-radius: 10px 0 0 10px; }
+    .model-info-table tbody td:last-child { border-radius: 0 10px 10px 0; }
+    .model-info-table tbody tr:hover td { background: var(--primary-pale); }
+
+    .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .status-best { background: #fef9c3; color: #854d0e; border: 1px solid #fde68a; }
+    .status-runner { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+    .status-third { background: #fef3e2; color: #92400e; border: 1px solid #fed7aa; }
+    .status-default { background: var(--border-soft); color: var(--text-muted); border: 1px solid var(--border); }
+
+    .tips-card { background: var(--info-light); border: 1px solid #bae6fd; border-radius: 14px; padding: 18px 22px; margin-top: 20px; display: flex; align-items: flex-start; gap: 16px; }
+    .tips-icon { width: 42px; height: 42px; background: var(--primary); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .tips-icon i { color: white; font-size: 15px; }
+    .tips-card h5 { font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; font-family: 'Sora', sans-serif; }
+    .tips-card p { font-size: 12px; color: var(--text-muted); margin: 0; line-height: 1.6; }
+
+    .active-model-pill { display: inline-flex; align-items: center; gap: 6px; background: var(--success-light); color: var(--success); border: 1px solid #bbf7d0; padding: 5px 14px; border-radius: 40px; font-size: 11px; font-weight: 600; }
+    .sort-pill { display: inline-flex; align-items: center; gap: 6px; background: var(--border-soft); color: var(--text-muted); border: 1px solid var(--border); padding: 5px 14px; border-radius: 40px; font-size: 11px; font-weight: 600; }
+    .loading-indicator { font-size: 11px; color: var(--primary); margin-top: 5px; display: none; }
+
+    @media (max-width: 768px) {
+        .welcome-section { padding: 18px 20px; }
+        .result-price { font-size: 32px; }
+        .model-selector { grid-template-columns: 1fr; }
+        .detail-grid { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="welcome-section">
+    <div>
+        <h2><i class="fas fa-calculator me-2"></i>Prediksi Harga Properti</h2>
+        <p>Gunakan model machine learning untuk memprediksi harga properti</p>
+    </div>
+    <div class="user-pill">
+        <i class="fas fa-user" style="font-size:11px;opacity:0.7;"></i> {{ user.name }}
+    </div>
+</div>
+
+<div class="section-header">
+    <h4><i class="fas fa-microchip"></i>Pilih Model Prediksi</h4>
+    {% if selected_model_id is defined and metrics.all_models %}
+    {% for model in metrics.all_models|sort(attribute='r2', reverse=true) %}
+        {% if model.id == selected_model_id %}
+        <span class="active-model-pill">
+            <i class="fas fa-check-circle"></i> {{ model.name|replace('1. ', '')|replace('2. ', '')|replace('3. ', '')|replace('4. ', '') }}
+        </span>
+        {% endif %}
+    {% endfor %}
+    {% endif %}
+</div>
+
+<div class="model-selector">
+    {% for model in metrics.all_models|sort(attribute='r2', reverse=true) %}
+    <a href="{{ url_for('prediksi_with_model', model_id=model.id) }}"
+       class="model-option {% if selected_model_id == model.id %}active{% endif %} {% if loop.first %}best{% endif %}">
+        {% if loop.first %}<span class="best-badge"><i class="fas fa-trophy me-1"></i>Terbaik</span>{% endif %}
+        <div class="model-name">
+            <span class="rank-badge {% if loop.index == 1 %}rank-1{% elif loop.index == 2 %}rank-2{% elif loop.index == 3 %}rank-3{% endif %}">{{ loop.index }}</span>
+            {{ model.name|replace('1. ', '')|replace('2. ', '')|replace('3. ', '')|replace('4. ', '') }}
+        </div>
+        <div class="model-metrics">
+            <span class="metric-badge"><i class="fas fa-chart-line"></i>R² {{ "%.3f"|format(model.r2) }}</span>
+            <span class="metric-badge"><i class="fas fa-percent"></i>MAPE {{ "%.1f"|format(model.mape) }}%</span>
+            <span class="metric-badge"><i class="fas fa-cube"></i>{{ model.n_features }} fitur</span>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+{% if selected_model_id is defined and metrics.all_models %}
+{% for model in metrics.all_models if model.id == selected_model_id %}
+<div class="info-alert">
+    <i class="fas fa-info-circle me-2"></i>
+    Menggunakan model <strong>{{ model.name|replace('1. ', '')|replace('2. ', '')|replace('3. ', '')|replace('4. ', '') }}</strong>
+    dengan R² = {{ "%.3f"|format(model.r2) }} dan MAPE = {{ "%.1f"|format(model.mape) }}%
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card-custom">
+            <h5><i class="fas fa-edit"></i>Input Data Properti</h5>
+            <div id="loadingIndicator" class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Memuat opsi...</div>
+            
+            <form method="POST" id="prediksiForm">
+                <div class="mb-3">
+                    <label class="form-label-custom"><i class="fas fa-map-marker-alt"></i>Kecamatan <span class="option-count" id="count_kecamatan"></span></label>
+                    <select class="form-select-custom" name="kecamatan" id="kecamatan" required>
+                        <option value="">-- Pilih Kecamatan --</option>
+                        <option value="Lowokwaru">Lowokwaru</option>
+                        <option value="Klojen">Klojen</option>
+                        <option value="Blimbing">Blimbing</option>
+                        <option value="Sukun">Sukun</option>
+                        <option value="Kedungkandang">Kedungkandang</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label-custom"><i class="fas fa-vector-square"></i>Luas Tanah (m²) <span class="option-count" id="count_luas_tanah">(pilih kecamatan)</span></label>
+                    <select class="form-select-custom" name="luas_tanah" id="luas_tanah" required>
+                        <option value="">-- Pilih Luas Tanah --</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label-custom"><i class="fas fa-building"></i>Luas Bangunan (m²) <span class="option-count" id="count_luas_bangunan">(pilih kecamatan)</span></label>
+                    <select class="form-select-custom" name="luas_bangunan" id="luas_bangunan" required>
+                        <option value="">-- Pilih Luas Bangunan --</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label-custom"><i class="fas fa-bed"></i>Kamar Tidur <span class="option-count" id="count_kamar_tidur">(pilih kecamatan)</span></label>
+                    <select class="form-select-custom" name="kamar_tidur" id="kamar_tidur" required>
+                        <option value="">-- Pilih Kamar Tidur --</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label-custom"><i class="fas fa-bath"></i>Kamar Mandi <span class="option-count" id="count_kamar_mandi">(pilih kecamatan)</span></label>
+                    <select class="form-select-custom" name="kamar_mandi" id="kamar_mandi" required>
+                        <option value="">-- Pilih Kamar Mandi --</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-predict"><i class="fas fa-magic me-2"></i>Prediksi Harga Sekarang</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        {% if prediction %}
+        <div class="result-card">
+            <div class="result-header">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h5><i class="fas fa-chart-bar"></i>Hasil Prediksi</h5>
+                    <span class="model-badge-inline"><i class="fas fa-robot"></i> {{ prediction.model_name|replace('1. ', '')|replace('2. ', '')|replace('3. ', '')|replace('4. ', '') }}</span>
+                </div>
+            </div>
+            <div class="result-price-section">
+                <div class="result-price-label"><i class="fas fa-tag me-1"></i>Estimasi Harga</div>
+                <div class="result-price">{{ prediction.harga_formatted }}</div>
+            </div>
+            <div class="result-body">
+                <div class="detail-section">
+                    <div class="detail-section-title"><i class="fas fa-home"></i>Spesifikasi</div>
+                    <div class="detail-grid">
+                        <div class="detail-item-box"><div class="detail-item-label"><i class="fas fa-bed"></i>KT</div><div class="detail-item-value">{{ prediction.input.kamar_tidur }}</div></div>
+                        <div class="detail-item-box"><div class="detail-item-label"><i class="fas fa-bath"></i>KM</div><div class="detail-item-value">{{ prediction.input.kamar_mandi }}</div></div>
+                        <div class="detail-item-box"><div class="detail-item-label"><i class="fas fa-vector-square"></i>LT</div><div class="detail-item-value">{{ prediction.input.luas_tanah }} m²</div></div>
+                        <div class="detail-item-box"><div class="detail-item-label"><i class="fas fa-building"></i>LB</div><div class="detail-item-value">{{ prediction.input.luas_bangunan }} m²</div></div>
+                        <div class="detail-item-box" style="grid-column: span 2;"><div class="detail-item-label"><i class="fas fa-map-marker-alt"></i>Lokasi</div><div class="detail-item-value">{{ prediction.input.kecamatan }}</div></div>
+                    </div>
+                </div>
+                {% if prediction.harga_aktual %}
+                <div class="validation-section">
+                    <div class="validation-title"><i class="fas fa-balance-scale"></i>Validasi Harga Pasar</div>
+                    <div class="validation-row"><span class="label">Harga Pasar</span><span class="value">{{ prediction.harga_aktual_formatted }}</span></div>
+                    <div class="validation-row"><span class="label">Harga Prediksi</span><span class="value">{{ prediction.harga_formatted }}</span></div>
+                    <div class="validation-row highlight"><span class="label">Selisih</span><span class="value">{{ prediction.selisih_formatted }} ({{ "%.1f"|format(prediction.persentase_selisih) }}%)</span></div>
+                    <div class="validation-row">
+                        <span class="label">Akurasi</span>
+                        <span class="value"><span class="accuracy-badge {% if prediction.akurasi >= 95 %}accuracy-excellent{% elif prediction.akurasi >= 85 %}accuracy-good{% elif prediction.akurasi >= 70 %}accuracy-fair{% else %}accuracy-poor{% endif %}">{{ "%.1f"|format(prediction.akurasi) }}%</span></span>
+                    </div>
+                    <div class="validation-row"><span class="label">Data Pembanding</span><span class="value">{{ prediction.jumlah_data_pembanding }} properti</span></div>
+                </div>
+                {% endif %}
+                {% if prediction.model_r2 %}
+                <div class="model-perf"><span>Performa Model</span><strong>R²={{ "%.3f"|format(prediction.model_r2) }} | MAPE={{ "%.1f"|format(prediction.model_mape * 100 if prediction.model_mape else 0) }}%</strong></div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="card-custom h-100 d-flex align-items-center justify-content-center">
+            <div class="empty-state"><i class="fas fa-home"></i><h5>Belum Ada Prediksi</h5><p>Masukkan data properti dan pilih model</p></div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="section-header mt-4"><h4><i class="fas fa-table"></i>Perbandingan Model</h4><span class="sort-pill"><i class="fas fa-sort-amount-down"></i>Urut: R² Tertinggi</span></div>
+<div class="card-custom">
+    <div class="table-responsive">
+        <table class="model-info-table">
+            <thead><tr><th>#</th><th>Model</th><th>Fitur</th><th>MAE</th><th>R²</th><th>MAPE</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for model in metrics.all_models|sort(attribute='r2', reverse=true) %}
+                <tr>
+                    <td><span class="rank-badge {% if loop.index == 1 %}rank-1{% elif loop.index == 2 %}rank-2{% elif loop.index == 3 %}rank-3{% endif %}">{{ loop.index }}</span></td>
+                    <td><i class="fas fa-robot me-2" style="color:var(--primary);font-size:11px;"></i>{{ model.name|replace('1. ', '')|replace('2. ', '')|replace('3. ', '')|replace('4. ', '') }}</td>
+                    <td style="color:var(--text-muted);">{{ model.n_features }}</td>
+                    <td>{% if model.mae >= 1e9 %}Rp {{ (model.mae / 1e9)|round(2) }} M{% else %}Rp {{ (model.mae / 1e6)|round(0)|int }} Jt{% endif %}</td>
+                    <td><span style="font-weight:700;color:{% if model.r2 > 0.9 %}var(--success){% elif model.r2 > 0.8 %}var(--primary){% else %}var(--text-muted){% endif %};">{{ "%.3f"|format(model.r2) }}</span></td>
+                    <td><span style="font-weight:700;color:{% if model.mape < 10 %}var(--success){% elif model.mape < 20 %}var(--warning){% else %}var(--danger){% endif %};">{{ "%.1f"|format(model.mape) }}%</span></td>
+                    <td>
+                        {% if loop.first %}<span class="status-pill status-best"><i class="fas fa-trophy"></i>Terbaik</span>
+                        {% elif loop.index == 2 %}<span class="status-pill status-runner"><i class="fas fa-medal"></i>Runner-up</span>
+                        {% elif loop.index == 3 %}<span class="status-pill status-third"><i class="fas fa-medal"></i>Ketiga</span>
+                        {% else %}<span class="status-pill status-default">Standar</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="tips-card">
+    <div class="tips-icon"><i class="fas fa-lightbulb"></i></div>
+    <div><h5>Tips Prediksi Akurat</h5><p>Pilih kecamatan terlebih dahulu, lalu pilih luas tanah, luas bangunan, kamar tidur, dan kamar mandi secara berurutan. Opsi menyesuaikan data riil di database.</p></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const kecamatanDataCount = {
+    {% for kec, count in metrics.kecamatan_counts.items() %}"{{ kec }}": {{ count }},{% endfor %}
+};
+let isLoading = false, isUpdating = false;
+
+function updateCountLabel(id, count) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = count > 0 ? `(${count} opsi)` : '';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const sel = document.getElementById('kecamatan');
+    sel.querySelectorAll('option').forEach(opt => {
+        if (opt.value && kecamatanDataCount[opt.value]) {
+            opt.textContent = opt.textContent.split(' (')[0] + ` (${kecamatanDataCount[opt.value]} data)`;
+        }
+    });
+    updateCountLabel('count_kecamatan', Object.keys(kecamatanDataCount).length);
+    if (sel.value) fetchOptions();
+});
+
+function updateSelect(selectId, values, placeholder, countLabelId, suffix) {
+    const select = document.getElementById(selectId);
+    if (!select || isUpdating) return;
+    isUpdating = true;
+    const cur = select.value;
+    select.innerHTML = '';
+    const cnt = values ? values.length : 0;
+    const ph = document.createElement('option');
+    ph.value = ''; ph.textContent = cnt > 0 ? `${placeholder} (${cnt} pilihan)` : placeholder;
+    select.appendChild(ph);
+    if (values && values.length > 0) {
+        values.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v; opt.textContent = suffix ? `${v} ${suffix}` : `${v} m²`;
+            if (cur && v == parseInt(cur)) opt.selected = true;
+            select.appendChild(opt);
+        });
+    }
+    updateCountLabel(countLabelId, cnt);
+    isUpdating = false;
+}
+
+async function fetchOptions() {
+    if (isLoading) return;
+    const kec = document.getElementById('kecamatan').value;
+    if (!kec) {
+        updateSelect('luas_tanah', [], '-- Pilih Luas Tanah', 'count_luas_tanah', '');
+        updateSelect('luas_bangunan', [], '-- Pilih Luas Bangunan', 'count_luas_bangunan', '');
+        updateSelect('kamar_tidur', [], '-- Pilih Kamar Tidur', 'count_kamar_tidur', 'KT');
+        updateSelect('kamar_mandi', [], '-- Pilih Kamar Mandi', 'count_kamar_mandi', 'KM');
+        return;
+    }
+    isLoading = true;
+    document.getElementById('loadingIndicator').style.display = 'block';
+    try {
+        const res = await fetch('/api/get_nilai_properti', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                kecamatan: kec,
+                luas_tanah: document.getElementById('luas_tanah').value,
+                luas_bangunan: document.getElementById('luas_bangunan').value,
+                kamar_tidur: document.getElementById('kamar_tidur').value,
+                kamar_mandi: document.getElementById('kamar_mandi').value
+            })
+        });
+        const data = await res.json();
+        if (data.success && data.data) {
+            updateSelect('luas_tanah', data.data.luas_tanah, '-- Pilih Luas Tanah', 'count_luas_tanah', '');
+            updateSelect('luas_bangunan', data.data.luas_bangunan, '-- Pilih Luas Bangunan', 'count_luas_bangunan', '');
+            updateSelect('kamar_tidur', data.data.kamar_tidur, '-- Pilih Kamar Tidur', 'count_kamar_tidur', 'KT');
+            updateSelect('kamar_mandi', data.data.kamar_mandi, '-- Pilih Kamar Mandi', 'count_kamar_mandi', 'KM');
+        }
+    } catch(e) { console.error(e); }
+    isLoading = false;
+    document.getElementById('loadingIndicator').style.display = 'none';
+}
+
+document.getElementById('kecamatan').addEventListener('change', function() {
+    updateSelect('luas_tanah', [], '-- Pilih Luas Tanah', 'count_luas_tanah', '');
+    updateSelect('luas_bangunan', [], '-- Pilih Luas Bangunan', 'count_luas_bangunan', '');
+    updateSelect('kamar_tidur', [], '-- Pilih Kamar Tidur', 'count_kamar_tidur', 'KT');
+    updateSelect('kamar_mandi', [], '-- Pilih Kamar Mandi', 'count_kamar_mandi', 'KM');
+    fetchOptions();
+});
+document.getElementById('luas_tanah').addEventListener('change', fetchOptions);
+document.getElementById('luas_bangunan').addEventListener('change', fetchOptions);
+document.getElementById('kamar_tidur').addEventListener('change', fetchOptions);
+document.getElementById('kamar_mandi').addEventListener('change', fetchOptions);
+</script>
+{% endblock %}

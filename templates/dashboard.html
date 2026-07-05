@@ -1,0 +1,666 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Properti Prediksi Malang{% endblock %}
+
+{% block extra_css %}
+<style>
+
+    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
+    :root {
+        --primary: #1E3A5F;
+        --primary-light: #2c5a8c;
+        --primary-pale: #eef3fa;
+        --success: #16a34a;
+        --success-light: #f0fdf4;
+        --warning: #b45309;
+        --warning-light: #fffbeb;
+        --danger: #dc2626;
+        --info: #0369a1;
+        --info-light: #f0f9ff;
+        --gray-bg: #f4f6f9;
+        --border: #e8ecf0;
+        --border-soft: #f1f5f9;
+        --text-main: #1a2332;
+        --text-muted: #64748b;
+        --text-hint: #94a3b8;
+    }
+
+body, .dashboard-wrap * {
+    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+}
+
+    /* ===== WELCOME BANNER ===== */
+    .welcome-section {
+        background: var(--primary);
+        border-radius: 18px;
+        padding: 24px 28px;
+        color: white;
+        margin-bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .welcome-section h2 {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+.welcome-section h2,
+.section-header h4,
+.model-name,
+.stat-value {
+    font-family: 'Sora', sans-serif;
+}
+
+
+    .welcome-section p { font-size: 13px; opacity: 0.75; margin: 0; }
+    .date-badge {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        background: rgba(255,255,255,0.12);
+        padding: 7px 16px;
+        border-radius: 40px;
+        font-size: 12px;
+        font-weight: 500;
+        border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    /* ===== STAT CARDS ===== */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin-bottom: 24px;
+    }
+    .stat-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px 18px;
+        position: relative;
+        overflow: hidden;
+        transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .stat-card:hover { box-shadow: 0 8px 24px rgba(30,58,95,0.08); transform: translateY(-2px); }
+    .stat-card .s-deco {
+        position: absolute; right: -12px; bottom: -12px;
+        width: 64px; height: 64px; border-radius: 50%; opacity: 0.05;
+        background: var(--primary);
+    }
+    .stat-icon {
+        width: 36px; height: 36px;
+        background: var(--primary-pale);
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 12px;
+    }
+    .stat-icon i { font-size: 15px; color: var(--primary); }
+    .stat-value { font-size: 26px; font-weight: 700; color: var(--primary); margin-bottom: 3px; line-height: 1; }
+    .stat-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+
+    /* ===== SECTION HEADER ===== */
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .section-header h4 {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-main);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .section-header h4 i { color: var(--primary); font-size: 14px; }
+    .best-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #fefce8;
+        color: #854d0e;
+        border: 1px solid #fde68a;
+        padding: 5px 14px;
+        border-radius: 40px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    /* ===== MODEL CARDS ===== */
+    .models-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+    .model-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 18px 20px;
+        display: flex;
+        flex-direction: column;
+        transition: box-shadow 0.2s, transform 0.2s;
+        position: relative;
+    }
+    .model-card:hover { box-shadow: 0 8px 24px rgba(30,58,95,0.08); transform: translateY(-3px); }
+    .model-card.best-model {
+        border-color: #fde68a;
+        background: #fffdf0;
+    }
+    .model-badge { position: absolute; top: 16px; right: 16px; }
+    .badge-best {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: #fefce8; color: #854d0e;
+        border: 1px solid #fde68a;
+        padding: 4px 10px; border-radius: 20px;
+        font-size: 10px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .model-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border-soft);
+    }
+    .model-header-left { display: flex; align-items: center; gap: 8px; }
+    .rank-badge {
+        width: 26px; height: 26px;
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 11px; font-weight: 700; flex-shrink: 0;
+        background: #f1f5f9; color: var(--text-muted);
+    }
+    .rank-1 { background: #fef9c3; color: #854d0e; }
+    .rank-2 { background: #f1f5f9; color: #475569; }
+    .rank-3 { background: #fef3e2; color: #92400e; }
+    .model-name { font-size: 13px; font-weight: 700; color: var(--text-main); }
+    .feature-badge {
+        background: var(--primary-pale);
+        color: var(--primary);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 600;
+    }
+
+    /* Metrics */
+    .metric-row { margin-bottom: 14px; }
+    .metric-label {
+        font-size: 11px; color: var(--text-muted);
+        display: flex; justify-content: space-between;
+        margin-bottom: 5px; font-weight: 500;
+    }
+    .metric-label .metric-score { font-weight: 700; color: var(--text-main); }
+    .metric-label .metric-score.good { color: var(--success); }
+    .metric-label .metric-score.warn { color: var(--warning); }
+    .metric-label .metric-score.bad { color: var(--danger); }
+    .progress-custom {
+        background: var(--border-soft);
+        border-radius: 10px; height: 5px; overflow: hidden;
+    }
+    .progress-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
+    .progress-fill.success { background: var(--success); }
+    .progress-fill.info { background: var(--info); }
+    .progress-fill.warning { background: #f59e0b; }
+    .metric-val-big { font-size: 17px; font-weight: 700; color: var(--text-main); margin-top: 2px; }
+    .metric-sub { font-size: 10px; color: var(--text-hint); margin-top: 2px; }
+
+    .btn-predict-model {
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 9px;
+        padding: 11px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        transition: background 0.15s, transform 0.15s;
+        text-align: center;
+        display: block;
+        text-decoration: none;
+        margin-top: auto;
+        font-family: inherit;
+    }
+    .btn-predict-model:hover { background: var(--primary-light); color: white; transform: translateY(-1px); }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+        text-align: center; padding: 50px 20px;
+        background: white; border: 1px solid var(--border);
+        border-radius: 14px; margin-bottom: 28px;
+    }
+    .empty-state i { font-size: 36px; color: var(--text-hint); margin-bottom: 14px; display: block; }
+    .empty-state h5 { font-size: 15px; font-weight: 600; color: var(--text-main); margin-bottom: 6px; }
+    .empty-state p { font-size: 13px; color: var(--text-muted); margin: 0; }
+
+    /* ===== CHART CARDS ===== */
+    .chart-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin-bottom: 16px;
+    }
+    .chart-title {
+        font-size: 13px; font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border-soft);
+        display: flex; align-items: center; gap: 7px;
+    }
+    .chart-title i { color: var(--primary); font-size: 13px; }
+    .chart-container { position: relative; height: 240px; width: 100%; }
+    .chart-loading {
+        position: absolute; inset: 0;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(255,255,255,0.8); border-radius: 10px;
+        font-size: 13px; color: var(--text-muted);
+    }
+
+    /* Kecamatan list */
+    .kecamatan-list { max-height: 240px; overflow-y: auto; }
+    .kecamatan-list::-webkit-scrollbar { width: 4px; }
+    .kecamatan-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .kecamatan-item {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 10px 0; border-bottom: 1px solid var(--border-soft);
+    }
+    .kecamatan-item:last-child { border-bottom: none; }
+    .kecamatan-name { font-weight: 600; font-size: 13px; color: var(--text-main); }
+    .kecamatan-count { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .kecamatan-price { font-weight: 700; color: var(--primary); font-size: 13px; }
+
+    /* ===== CTA ===== */
+    .cta-wrap { text-align: center; margin: 28px 0; }
+    .cta-button {
+        display: inline-flex; align-items: center; gap: 10px;
+        background: var(--success); color: white;
+        padding: 13px 30px; border-radius: 40px;
+        font-weight: 600; font-size: 14px;
+        text-decoration: none;
+        transition: background 0.15s, transform 0.15s;
+    }
+    .cta-button:hover { background: #15803d; color: white; transform: translateY(-2px); }
+    .cta-button i { font-size: 14px; }
+    .cta-sub { font-size: 12px; color: var(--text-hint); margin-top: 10px; }
+
+    @media (max-width: 992px) {
+        .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        .models-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 576px) {
+        .stats-grid { grid-template-columns: 1fr 1fr; }
+        .welcome-section { padding: 18px 20px; }
+        .welcome-section h2 { font-size: 16px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- WELCOME -->
+<div class="welcome-section">
+    <div>
+        <h2><i class="fas fa-chart-line me-2"></i>Dashboard</h2>
+        <p>Selamat datang kembali, {{ user.name }}!</p>
+    </div>
+    <div class="date-badge">
+        <i class="fas fa-calendar-alt"></i>{{ metrics.last_update }}
+    </div>
+</div>
+
+<!-- STAT CARDS -->
+<div class="stats-grid">
+<div class="stat-card">
+        <div class="s-deco"></div>
+        <div class="stat-icon"><i class="fas fa-database"></i></div>
+        <div class="stat-value">{{ metrics.total_data|default(0)|int }}</div>
+        <div class="stat-label">Total Data Properti</div>
+        {% if metrics.date_range %}
+        <div style="font-size:10px;color:var(--text-hint);margin-top:6px;line-height:1.4;">
+            <i class="fas fa-calendar-alt" style="font-size:9px;margin-right:3px;"></i>
+            {{ metrics.date_range.from }} — {{ metrics.date_range.to }}
+        </div>
+        {% endif %}
+    </div>
+
+    
+    <div class="stat-card">
+        <div class="s-deco"></div>
+        <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+        <div class="stat-value">
+            {% set sorted_models = metrics.all_models|sort(attribute='r2', reverse=true) if metrics.all_models else [] %}
+            {% if sorted_models %}{{ "%.1f"|format(sorted_models[0].r2 * 100) }}%{% else %}—{% endif %}
+        </div>
+        <div class="stat-label">Akurasi Terbaik (R²)</div>
+    </div>
+    <div class="stat-card">
+        <div class="s-deco"></div>
+        <div class="stat-icon"><i class="fas fa-brain"></i></div>
+        <div class="stat-value">{% if metrics.all_models %}{{ metrics.all_models|length }}{% else %}0{% endif %}</div>
+        <div class="stat-label">Model Terlatih</div>
+    </div>
+    <div class="stat-card">
+        <div class="s-deco"></div>
+        <div class="stat-icon"><i class="fas fa-map-marker-alt"></i></div>
+        <div class="stat-value">{{ metrics.kecamatan_counts|length }}</div>
+        <div class="stat-label">Kecamatan</div>
+    </div>
+</div>
+
+<!-- SECTION HEADER MODEL -->
+<div class="section-header">
+    <h4><i class="fas fa-layer-group"></i>Perbandingan Model Random Forest</h4>
+    <span class="best-badge">
+        <i class="fas fa-trophy"></i>Terbaik:
+        {% set sorted_models = metrics.all_models|sort(attribute='r2', reverse=true) if metrics.all_models else [] %}
+        {{ sorted_models[0].name|replace('1. ', '')|replace('2. ', '')|replace('3. ', '')|replace('4. ', '')|replace('5. ', '') if sorted_models else '—' }}
+    </span>
+</div>
+
+{% if metrics.all_models and metrics.all_models|length > 0 %}
+<div class="models-grid">
+    {% for model in metrics.all_models|sort(attribute='r2', reverse=true) %}
+    <div class="model-card {% if loop.first %}best-model{% endif %}">
+        {% if loop.first %}
+        <div class="model-badge">
+            <span class="badge-best"><i class="fas fa-trophy"></i> Terbaik</span>
+        </div>
+        {% endif %}
+        <div class="model-header">
+            <div class="model-header-left">
+                <div class="rank-badge {% if loop.index == 1 %}rank-1{% elif loop.index == 2 %}rank-2{% elif loop.index == 3 %}rank-3{% endif %}">{{ loop.index }}</div>
+                <span class="model-name">{{ model.name|replace('1. ', '')|replace('2. ', '')|replace('3. ', '')|replace('4. ', '')|replace('5. ', '') }}</span>
+            </div>
+            <span class="feature-badge"><i class="fas fa-cube me-1"></i>{{ model.n_features }} fitur</span>
+        </div>
+
+        <div class="metric-row">
+            <div class="metric-label">
+                <span>R² Score</span>
+                <span class="metric-score {% if model.r2 > 0.9 %}good{% elif model.r2 > 0.75 %}warn{% else %}bad{% endif %}">{{ "%.2f"|format(model.r2 * 100) }}%</span>
+            </div>
+            <div class="progress-custom">
+                <div class="progress-fill {% if model.r2 > 0.9 %}success{% elif model.r2 > 0.8 %}info{% else %}warning{% endif %}" style="width: {{ (model.r2 * 100)|int }}%"></div>
+            </div>
+        </div>
+
+        <div class="metric-row">
+            <div class="metric-label"><span>MAE</span></div>
+            <div class="metric-val-big">
+                {% if model.mae >= 1e9 %}Rp {{ (model.mae / 1e9)|round(1) }} M
+                {% else %}Rp {{ (model.mae / 1e6)|round(0)|int }} Jt{% endif %}
+            </div>
+            <div class="metric-sub">~ Rp {{ (model.mae / 1e9)|round(2) }} M</div>
+        </div>
+
+        <div class="metric-row">
+            <div class="metric-label">
+                <span>MAPE</span>
+                <span class="metric-score {% if model.mape < 10 %}good{% elif model.mape < 20 %}warn{% else %}bad{% endif %}">{{ "%.2f"|format(model.mape) }}%</span>
+            </div>
+            <div class="progress-custom">
+                <div class="progress-fill warning" style="width: {{ [model.mape, 100]|min|int }}%"></div>
+            </div>
+        </div>
+
+        <a href="{{ url_for('prediksi') }}" class="btn-predict-model">
+            <i class="fas fa-calculator me-2"></i>Prediksi Harga
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-chart-line"></i>
+    <h5>Belum Ada Data Model</h5>
+    <p>Silakan jalankan training model terlebih dahulu</p>
+</div>
+{% endif %}
+
+<!-- VISUALISASI -->
+<div class="section-header mt-2">
+    <h4><i class="fas fa-chart-pie"></i>Visualisasi Data</h4>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="chart-card">
+            <div class="chart-title"><i class="fas fa-chart-scatter"></i>Perbandingan Harga Aktual vs Prediksi</div>
+            <div class="chart-container"><canvas id="comparisonChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="chart-card">
+            <div class="chart-title"><i class="fas fa-chart-pie"></i>Distribusi Properti per Kecamatan</div>
+            <div class="chart-container"><canvas id="kecamatanChart"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="chart-card">
+            <div class="chart-title"><i class="fas fa-chart-bar"></i>Perbandingan R² Semua Model</div>
+            <div class="chart-container"><canvas id="r2ComparisonChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="chart-card">
+            <div class="chart-title"><i class="fas fa-city"></i>Rata-rata Harga per Kecamatan</div>
+            <div class="kecamatan-list" id="priceList">
+                <div class="text-center py-4" style="color:var(--text-hint);font-size:13px;">
+                    <i class="fas fa-spinner fa-spin me-2"></i>Memuat data...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CTA -->
+<div class="cta-wrap">
+    <a href="{{ url_for('prediksi') }}" class="cta-button">
+        <i class="fas fa-calculator"></i>
+        Lakukan Prediksi Harga Properti
+        <i class="fas fa-arrow-right"></i>
+    </a>
+    <p class="cta-sub"><i class="fas fa-info-circle me-1"></i>Gunakan model terbaik untuk prediksi</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let chart1 = null, chart2 = null, chart3 = null;
+const MAX_CHART_POINTS = 100;
+
+function sampleData(array, maxPoints) {
+    if (!array || array.length === 0) return [];
+    if (array.length <= maxPoints) return array;
+    const step = Math.ceil(array.length / maxPoints);
+    return array.filter((_, i) => i % step === 0).slice(0, maxPoints);
+}
+
+async function loadChartData() {
+    try {
+        const response = await fetch('/api/data');
+        const data = await response.json();
+        if (data.error) { console.error('API Error:', data.error); return; }
+
+        const ctx1 = document.getElementById('comparisonChart').getContext('2d');
+        if (chart1) chart1.destroy();
+        const actual = data.actual || [];
+        const predicted = data.predicted || [];
+        const sampledActual = sampleData(actual, MAX_CHART_POINTS);
+        const sampledPredicted = sampleData(predicted, MAX_CHART_POINTS);
+
+        chart1 = new Chart(ctx1, {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    {
+                        label: 'Harga Aktual',
+                        data: sampledActual.map((y, i) => ({x: i + 1, y})),
+                        backgroundColor: '#1E3A5F',
+                        pointRadius: 4, pointHoverRadius: 6,
+                        pointBorderColor: 'white', pointBorderWidth: 1
+                    },
+                    {
+                        label: 'Harga Prediksi',
+                        data: sampledPredicted.map((y, i) => ({x: i + 1, y})),
+                        backgroundColor: '#16a34a',
+                        pointRadius: 4, pointHoverRadius: 6,
+                        pointBorderColor: 'white', pointBorderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                animation: { duration: 300 },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => {
+                                const val = ctx.raw.y;
+                                if (val >= 1e9) return `Harga: Rp ${(val/1e9).toFixed(2)} M`;
+                                else if (val >= 1e6) return `Harga: Rp ${(val/1e6).toFixed(0)} Jt`;
+                                return `Harga: Rp ${val.toLocaleString('id-ID')}`;
+                            }
+                        }
+                    },
+                    legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 10 } }
+                },
+                scales: {
+                    y: {
+                        title: { display: true, text: 'Harga (Rupiah)', font: { size: 11 } },
+                        ticks: {
+                            font: { size: 10 },
+                            callback: (value) => {
+                                if (value >= 1e9) return 'Rp ' + (value/1e9).toFixed(1) + ' M';
+                                else if (value >= 1e6) return 'Rp ' + (value/1e6).toFixed(0) + ' Jt';
+                                return 'Rp ' + value.toLocaleString('id-ID');
+                            }
+                        }
+                    },
+                    x: { title: { display: true, text: 'Data ke-', font: { size: 11 } }, ticks: { font: { size: 10 } } }
+                }
+            }
+        });
+
+        const metricsResponse = await fetch('/api/metrics');
+        const metricsData = await metricsResponse.json();
+
+        // Pie Chart
+        const kecNames = Object.keys(metricsData.kecamatan_counts || {});
+        const kecCounts = Object.values(metricsData.kecamatan_counts || {});
+        const ctx2 = document.getElementById('kecamatanChart').getContext('2d');
+        if (chart2) chart2.destroy();
+        if (kecNames.length > 0) {
+            chart2 = new Chart(ctx2, {
+                type: 'pie',
+                data: {
+                    labels: kecNames,
+                    datasets: [{
+                        data: kecCounts,
+                        backgroundColor: ['#1E3A5F','#16a34a','#0369a1','#b45309','#dc2626','#7c3aed'],
+                        borderWidth: 2, borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    animation: { duration: 300 },
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10, padding: 8 } } }
+                }
+            });
+        } else {
+            document.querySelector('#kecamatanChart').parentElement.innerHTML =
+                '<div class="chart-loading"><p style="color:var(--text-hint);font-size:13px;">Belum ada data</p></div>';
+        }
+
+        // Bar Chart R²
+        if (metricsData.all_models && metricsData.all_models.length > 0) {
+            const ctx3 = document.getElementById('r2ComparisonChart').getContext('2d');
+            if (chart3) chart3.destroy();
+            const sortedModels = [...metricsData.all_models].sort((a, b) => b.r2 - a.r2);
+            const modelNames = sortedModels.map(m => m.name.replace(/^\d+\.\s*/, ''));
+            const modelR2 = sortedModels.map(m => m.r2);
+            const modelColors = sortedModels.map((_, idx) => idx === 0 ? '#16a34a' : '#1E3A5F');
+
+            chart3 = new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: modelNames,
+                    datasets: [{
+                        label: 'R² Score',
+                        data: modelR2,
+                        backgroundColor: modelColors,
+                        borderRadius: 6,
+                        barPercentage: 0.65
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    animation: { duration: 300 },
+                    plugins: {
+                        tooltip: { callbacks: { label: (ctx) => `R² = ${(ctx.raw * 100).toFixed(2)}%` } },
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            min: Math.max(0, Math.min(...modelR2) - 0.05), max: 1,
+                            title: { display: true, text: 'R² Score', font: { size: 11 } },
+                            ticks: { callback: (v) => (v * 100).toFixed(0) + '%', font: { size: 10 } }
+                        },
+                        x: { ticks: { maxRotation: 40, minRotation: 40, font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        // Price List
+        const priceListDiv = document.getElementById('priceList');
+        if (metricsData.price_stats && Object.keys(metricsData.price_stats).length > 0) {
+            let html = '';
+            const sortedKec = Object.entries(metricsData.price_stats).sort((a, b) => b[1].mean - a[1].mean);
+            for (const [kec, stats] of sortedKec) {
+                const avg = stats.mean;
+                const min = stats.min;
+                const priceDisplay = avg >= 1e9 ? 'Rp ' + (avg/1e9).toFixed(2) + ' M' : 'Rp ' + (avg/1e6).toFixed(0) + ' Jt';
+                const minDisplay  = min >= 1e9 ? 'Rp ' + (min/1e9).toFixed(2) + ' M' : 'Rp ' + (min/1e6).toFixed(0) + ' Jt';
+                html += `<div class="kecamatan-item">
+                    <div>
+                        <div class="kecamatan-name">${kec}</div>
+                        <div class="kecamatan-count"><i class="fas fa-building me-1"></i>${stats.count} properti</div>
+                    </div>
+                    <div class="text-end">
+                        <div class="kecamatan-price">${priceDisplay}</div>
+                        <div style="font-size:10px;color:var(--text-hint);">Min: ${minDisplay}</div>
+                    </div>
+                </div>`;
+            }
+            priceListDiv.innerHTML = html;
+        } else {
+            priceListDiv.innerHTML = '<div class="text-center py-4" style="color:var(--text-hint);font-size:13px;">Belum ada data harga</div>';
+        }
+
+    } catch (error) {
+        console.error('Error loading charts:', error);
+        document.querySelectorAll('.chart-container').forEach(c => {
+            c.innerHTML = '<div class="chart-loading"><p style="color:#dc2626;font-size:13px;">Gagal memuat data</p></div>';
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadChartData);
+</script>
+{% endblock %}

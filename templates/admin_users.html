@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelola User - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1E3A5F;
+            --primary-light: #2c4c7a;
+            --primary-pale: #eef3fa;
+            --success: #16a34a;
+            --success-bg: #f0fdf4;
+            --danger: #dc2626;
+            --danger-bg: #fef2f2;
+            --gray-bg: #f4f6f9;
+            --sidebar-w: 230px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--gray-bg);
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+            font-size: 14px;
+            color: #1a2332;
+            overflow-x: hidden;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            position: fixed;
+            top: 0; left: 0;
+            width: var(--sidebar-w);
+            height: 100vh;
+            background: var(--primary);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            overflow-y: auto;
+        }
+        .sidebar-brand {
+            padding: 22px 20px 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-brand .icon-wrap {
+            width: 34px; height: 34px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .sidebar-brand .icon-wrap i { color: white; font-size: 14px; }
+        .sidebar-brand span { font-size: 15px; font-weight: 700; color: white; }
+        .nav-section-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.35);
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            padding: 18px 20px 6px;
+        }
+        .sidebar nav { padding: 8px 10px; flex: 1; }
+        .sidebar nav a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 10px;
+            color: rgba(255,255,255,0.65);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 2px;
+            transition: background 0.15s, color 0.15s;
+        }
+        .sidebar nav a i { width: 18px; text-align: center; font-size: 13px; }
+        .sidebar nav a:hover { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.9); }
+        .sidebar nav a.active { background: rgba(255,255,255,0.15); color: white; }
+        .sidebar-footer {
+            padding: 14px 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+        }
+
+        /* ===== MAIN ===== */
+        .main-wrap {
+            margin-left: var(--sidebar-w);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ===== TOPBAR ===== */
+        .topbar {
+            background: white;
+            border-bottom: 1px solid #e8ecf0;
+            padding: 16px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .topbar h1 { font-size: 17px; font-weight: 700; color: var(--primary); margin-bottom: 2px; }
+        .topbar p { font-size: 12px; color: #64748b; }
+        .admin-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--primary-pale);
+            padding: 7px 14px;
+            border-radius: 40px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* ===== CONTENT ===== */
+        .content { padding: 26px 28px; flex: 1; }
+
+        /* ===== STAT CARDS ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: white;
+            border: 1px solid #e8ecf0;
+            border-radius: 16px;
+            padding: 18px 20px;
+            position: relative;
+            overflow: hidden;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+        .stat-card:hover { box-shadow: 0 8px 24px rgba(30,58,95,0.08); transform: translateY(-2px); }
+        .stat-card .s-deco {
+            position: absolute; right: -14px; bottom: -14px;
+            width: 72px; height: 72px; border-radius: 50%; opacity: 0.05;
+        }
+        .stat-card .s-deco.blue { background: var(--primary); }
+        .stat-card .s-deco.green { background: var(--success); }
+        .stat-card .s-deco.red { background: var(--danger); }
+        .stat-card .s-icon {
+            width: 38px; height: 38px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
+        }
+        .stat-card .s-icon i { font-size: 15px; }
+        .stat-card .s-icon.blue { background: var(--primary-pale); color: var(--primary); }
+        .stat-card .s-icon.green { background: var(--success-bg); color: var(--success); }
+        .stat-card .s-icon.red { background: var(--danger-bg); color: var(--danger); }
+        .stat-card .s-label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .stat-card .s-val { font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+        .stat-card .s-val.blue { color: var(--primary); }
+        .stat-card .s-val.green { color: var(--success); }
+        .stat-card .s-val.red { color: var(--danger); }
+        .stat-card .s-sub { font-size: 11px; color: #94a3b8; }
+
+        /* ===== SECTION CARD ===== */
+        .section-card {
+            background: white;
+            border: 1px solid #e8ecf0;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .sec-header {
+            padding: 16px 22px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .sec-header-left { display: flex; align-items: center; gap: 8px; }
+        .sec-header-left i { color: var(--primary); font-size: 14px; }
+        .sec-header-left h5 { font-size: 14px; font-weight: 600; color: #1a2332; margin: 0; }
+
+        /* ===== TABEL ===== */
+        .tbl-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tbl-scroll::-webkit-scrollbar { height: 5px; }
+        .tbl-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+        .tbl-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+        table.tbl {
+            width: 100%;
+            min-width: 600px;
+            border-collapse: collapse;
+        }
+        table.tbl thead th {
+            background: #f8fafc;
+            padding: 10px 18px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e8ecf0;
+            white-space: nowrap;
+        }
+        table.tbl tbody tr {
+            border-bottom: 1px solid #f1f5f9;
+            transition: background 0.1s;
+        }
+        table.tbl tbody tr:last-child { border-bottom: none; }
+        table.tbl tbody tr:hover { background: #f8fafc; }
+        table.tbl td {
+            padding: 13px 18px;
+            font-size: 13px;
+            vertical-align: middle;
+            color: #334155;
+        }
+
+        .td-id { font-weight: 600; color: #94a3b8; font-size: 12px; }
+        .td-name { font-weight: 600; color: #1a2332; }
+        .td-email { color: #475569; }
+
+        .badge-role {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-role.admin { background: var(--danger-bg); color: var(--danger); border: 1px solid #fecaca; }
+        .badge-role.user { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+
+        .td-self { font-size: 12px; color: #94a3b8; font-style: italic; }
+
+        .btn-delete {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: 1px solid #fecaca;
+            background: var(--danger-bg);
+            color: var(--danger);
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.15s, border-color 0.15s;
+            cursor: pointer;
+        }
+        .btn-delete:hover { background: #fee2e2; border-color: #fca5a5; color: var(--danger); }
+        .btn-delete i { font-size: 11px; }
+
+        /* ===== FOOTER ===== */
+        footer {
+            padding: 20px 28px;
+            text-align: center;
+            font-size: 11px;
+            color: #94a3b8;
+            border-top: 1px solid #e8ecf0;
+            background: white;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 991px) {
+            :root { --sidebar-w: 200px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .main-wrap { margin-left: 0; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .content { padding: 18px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <div class="icon-wrap"><i class="fas fa-chart-line"></i></div>
+        <span>Admin Panel</span>
+    </div>
+    <nav>
+        <div class="nav-section-label">Menu</div>
+        <a href="{{ url_for('admin_dashboard') }}">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+        <a href="{{ url_for('admin_users') }}" class="active">
+            <i class="fas fa-users"></i> Kelola User
+        </a>
+        <a href="{{ url_for('admin_logs') }}">
+            <i class="fas fa-history"></i> Log Prediksi
+        </a>
+        <div class="nav-section-label">Lainnya</div>
+        <a href="{{ url_for('dashboard') }}">
+            <i class="fas fa-home"></i> Halaman User
+        </a>
+        <a href="{{ url_for('logout') }}">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        &copy; 2026 Properti Malang
+    </div>
+</div>
+
+<!-- MAIN -->
+<div class="main-wrap">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <div>
+            <h1><i class="fas fa-users me-2"></i>Kelola User</h1>
+            <p>Manajemen akun pengguna sistem</p>
+        </div>
+        <div class="admin-badge">
+            <i class="fas fa-user-shield"></i> {{ current_user.name }}
+        </div>
+    </div>
+
+    <div class="content">
+
+        <!-- STAT CARDS -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="s-deco blue"></div>
+                <div class="s-icon blue"><i class="fas fa-users"></i></div>
+                <div class="s-label">Total User</div>
+                <div class="s-val blue">{{ users|length }}</div>
+                <div class="s-sub">Semua akun terdaftar</div>
+            </div>
+            <div class="stat-card">
+                <div class="s-deco green"></div>
+                <div class="s-icon green"><i class="fas fa-user-check"></i></div>
+                <div class="s-label">User Biasa</div>
+                <div class="s-val green">{{ users|selectattr('role', 'equalto', 'user')|list|length }}</div>
+                <div class="s-sub">Role user</div>
+            </div>
+            <div class="stat-card">
+                <div class="s-deco red"></div>
+                <div class="s-icon red"><i class="fas fa-user-shield"></i></div>
+                <div class="s-label">Administrator</div>
+                <div class="s-val red">{{ users|selectattr('role', 'equalto', 'admin')|list|length }}</div>
+                <div class="s-sub">Role admin</div>
+            </div>
+        </div>
+
+        <!-- TABEL USER -->
+        <div class="section-card">
+            <div class="sec-header">
+                <div class="sec-header-left">
+                    <i class="fas fa-list"></i>
+                    <h5>Daftar Pengguna</h5>
+                </div>
+            </div>
+            <div class="tbl-scroll">
+                <table class="tbl">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nama</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td class="td-id">#{{ user.id }}</td>
+                            <td class="td-name">{{ user.name }}</td>
+                            <td class="td-email">{{ user.email }}</td>
+                            <td>
+                                {% if user.role == 'admin' %}
+                                    <span class="badge-role admin"><i class="fas fa-shield-alt"></i> Admin</span>
+                                {% else %}
+                                    <span class="badge-role user"><i class="fas fa-user"></i> User</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.email != current_user.email %}
+                                <a href="{{ url_for('admin_delete_user', user_id=user.id) }}"
+                                   class="btn-delete"
+                                   onclick="return confirm('Yakin ingin menghapus user {{ user.email }}?')">
+                                    <i class="fas fa-trash-alt"></i> Hapus
+                                </a>
+                                {% else %}
+                                <span class="td-self"><i class="fas fa-circle-dot me-1" style="font-size:9px;"></i>Anda sendiri</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" style="text-align:center;padding:50px;color:#94a3b8;font-size:13px;">
+                                <i class="fas fa-inbox" style="font-size:24px;margin-bottom:10px;display:block;opacity:0.4;"></i>
+                                Belum ada data user
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div><!-- end .content -->
+
+    <footer>
+        &copy; 2026 Sistem Prediksi Harga Properti Kota Malang &mdash; Admin Dashboard
+    </footer>
+
+</div><!-- end .main-wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

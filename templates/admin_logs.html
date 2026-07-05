@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Prediksi - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1E3A5F;
+            --primary-light: #2c4c7a;
+            --primary-pale: #eef3fa;
+            --success: #16a34a;
+            --success-bg: #f0fdf4;
+            --info: #0369a1;
+            --info-bg: #f0f9ff;
+            --warning: #b45309;
+            --warning-bg: #fffbeb;
+            --gray-bg: #f4f6f9;
+            --sidebar-w: 230px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--gray-bg);
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+            font-size: 14px;
+            color: #1a2332;
+            overflow-x: hidden;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            position: fixed;
+            top: 0; left: 0;
+            width: var(--sidebar-w);
+            height: 100vh;
+            background: var(--primary);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            overflow-y: auto;
+        }
+        .sidebar-brand {
+            padding: 22px 20px 18px;
+            display: flex; align-items: center; gap: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-brand .icon-wrap {
+            width: 34px; height: 34px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .sidebar-brand .icon-wrap i { color: white; font-size: 14px; }
+        .sidebar-brand span { font-size: 15px; font-weight: 700; color: white; }
+        .nav-section-label {
+            font-size: 10px; font-weight: 600;
+            color: rgba(255,255,255,0.35);
+            letter-spacing: 1.2px; text-transform: uppercase;
+            padding: 18px 20px 6px;
+        }
+        .sidebar nav { padding: 8px 10px; flex: 1; }
+        .sidebar nav a {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 12px; border-radius: 10px;
+            color: rgba(255,255,255,0.65);
+            text-decoration: none; font-size: 13px; font-weight: 500;
+            margin-bottom: 2px;
+            transition: background 0.15s, color 0.15s;
+        }
+        .sidebar nav a i { width: 18px; text-align: center; font-size: 13px; }
+        .sidebar nav a:hover { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.9); }
+        .sidebar nav a.active { background: rgba(255,255,255,0.15); color: white; }
+        .sidebar-footer {
+            padding: 14px 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 11px; color: rgba(255,255,255,0.3);
+        }
+
+        /* ===== MAIN ===== */
+        .main-wrap {
+            margin-left: var(--sidebar-w);
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+        }
+
+        /* ===== TOPBAR ===== */
+        .topbar {
+            background: white;
+            border-bottom: 1px solid #e8ecf0;
+            padding: 16px 28px;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 50;
+        }
+        .topbar h1 { font-size: 17px; font-weight: 700; color: var(--primary); margin-bottom: 2px; }
+        .topbar p { font-size: 12px; color: #64748b; }
+        .admin-badge {
+            display: flex; align-items: center; gap: 8px;
+            background: var(--primary-pale);
+            padding: 7px 14px; border-radius: 40px;
+            font-size: 12px; font-weight: 600; color: var(--primary);
+        }
+
+        /* ===== CONTENT ===== */
+        .content { padding: 26px 28px; flex: 1; }
+
+        /* ===== STAT CARDS ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px; margin-bottom: 24px;
+        }
+        .stat-card {
+            background: white; border: 1px solid #e8ecf0;
+            border-radius: 16px; padding: 18px 20px;
+            position: relative; overflow: hidden;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+        .stat-card:hover { box-shadow: 0 8px 24px rgba(30,58,95,0.08); transform: translateY(-2px); }
+        .stat-card .s-deco {
+            position: absolute; right: -14px; bottom: -14px;
+            width: 72px; height: 72px; border-radius: 50%; opacity: 0.05;
+        }
+        .stat-card .s-deco.blue { background: var(--primary); }
+        .stat-card .s-deco.green { background: var(--success); }
+        .stat-card .s-deco.teal { background: var(--info); }
+        .stat-card .s-deco.amber { background: var(--warning); }
+        .stat-card .s-icon {
+            width: 38px; height: 38px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
+        }
+        .stat-card .s-icon i { font-size: 15px; }
+        .stat-card .s-icon.blue { background: var(--primary-pale); color: var(--primary); }
+        .stat-card .s-icon.green { background: var(--success-bg); color: var(--success); }
+        .stat-card .s-icon.teal { background: var(--info-bg); color: var(--info); }
+        .stat-card .s-icon.amber { background: var(--warning-bg); color: var(--warning); }
+        .stat-card .s-label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .stat-card .s-val { font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+        .stat-card .s-val.blue { color: var(--primary); }
+        .stat-card .s-val.green { color: var(--success); }
+        .stat-card .s-val.teal { color: var(--info); }
+        .stat-card .s-val.amber { color: var(--warning); }
+        .stat-card .s-sub { font-size: 11px; color: #94a3b8; }
+
+        /* ===== SECTION CARD ===== */
+        .section-card {
+            background: white; border: 1px solid #e8ecf0;
+            border-radius: 16px; margin-bottom: 20px; overflow: hidden;
+        }
+        .sec-header {
+            padding: 16px 22px; border-bottom: 1px solid #f1f5f9;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .sec-header-left { display: flex; align-items: center; gap: 8px; }
+        .sec-header-left i { color: var(--primary); font-size: 14px; }
+        .sec-header-left h5 { font-size: 14px; font-weight: 600; color: #1a2332; margin: 0; }
+
+        /* ===== SEARCH / FILTER ===== */
+        .filter-bar {
+            padding: 14px 22px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .search-wrap {
+            position: relative; flex: 1; max-width: 280px;
+        }
+        .search-wrap i {
+            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+            color: #94a3b8; font-size: 12px;
+        }
+        .search-wrap input {
+            width: 100%; padding: 7px 12px 7px 34px;
+            border: 1px solid #e2e8f0; border-radius: 8px;
+            font-size: 12px; font-family: inherit; color: #334155;
+            background: #f8fafc; outline: none;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .search-wrap input:focus { border-color: var(--primary); background: white; }
+
+        .btn-excel {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 7px 16px; border-radius: 8px;
+            border: 1px solid rgba(22,163,74,0.25);
+            background: var(--success-bg); color: var(--success);
+            font-size: 12px; font-weight: 600; cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s, border-color 0.15s, transform 0.1s;
+            white-space: nowrap;
+        }
+        .btn-excel:hover { background: #dcfce7; border-color: rgba(22,163,74,0.4); }
+        .btn-excel:active { transform: scale(0.97); }
+        .btn-excel i { font-size: 12px; }
+        .btn-excel.loading { opacity: 0.6; pointer-events: none; }
+
+        /* ===== TABEL ===== */
+        .tbl-scroll {
+            overflow-x: auto; -webkit-overflow-scrolling: touch;
+        }
+        .tbl-scroll::-webkit-scrollbar { height: 5px; }
+        .tbl-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+        .tbl-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+        table.tbl { width: 100%; min-width: 760px; border-collapse: collapse; }
+        table.tbl thead th {
+            background: #f8fafc; padding: 10px 16px;
+            font-size: 11px; font-weight: 600; color: #64748b;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 1px solid #e8ecf0; white-space: nowrap;
+        }
+        table.tbl tbody tr {
+            border-bottom: 1px solid #f1f5f9;
+            transition: background 0.1s;
+        }
+        table.tbl tbody tr:last-child { border-bottom: none; }
+        table.tbl tbody tr:hover { background: #f8fafc; }
+        table.tbl td {
+            padding: 13px 16px; font-size: 13px;
+            vertical-align: middle; color: #334155;
+        }
+
+        .td-id { font-weight: 600; color: #94a3b8; font-size: 12px; }
+        .td-name { font-weight: 600; color: #1a2332; }
+        .td-time { font-size: 12px; color: #64748b; }
+        .td-price { font-weight: 700; color: var(--primary); }
+        .badge-na { background: #f1f5f9; color: #94a3b8; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+
+        .btn-view-input {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 5px 12px; border-radius: 8px;
+            border: 1px solid rgba(3,105,161,0.2);
+            background: var(--info-bg); color: var(--info);
+            font-size: 12px; font-weight: 600; cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .btn-view-input:hover { background: #e0f2fe; border-color: rgba(3,105,161,0.35); }
+        .btn-view-input i { font-size: 11px; }
+
+        /* ===== MODAL ===== */
+        .modal-content { border-radius: 16px; border: 1px solid #e8ecf0; box-shadow: 0 20px 60px rgba(0,0,0,0.12); }
+        .modal-header { background: #f8fafc; border-bottom: 1px solid #e8ecf0; border-radius: 16px 16px 0 0; padding: 16px 22px; }
+        .modal-title { font-size: 14px; font-weight: 700; color: var(--primary); }
+        .modal-body { padding: 20px 22px; }
+        .modal-body pre {
+            background: #f8fafc; border: 1px solid #e8ecf0;
+            border-radius: 10px; padding: 14px;
+            font-size: 12px; overflow-x: auto; color: #334155;
+        }
+        .modal-info-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 14px; border-radius: 10px;
+            margin-top: 10px;
+        }
+        .modal-info-row .label { font-size: 12px; font-weight: 600; }
+        .modal-info-row .val { font-size: 14px; font-weight: 700; }
+        .modal-info-row.blue { background: var(--primary-pale); border: 1px solid rgba(30,58,95,0.1); }
+        .modal-info-row.blue .label { color: var(--primary); }
+        .modal-info-row.blue .val { color: var(--primary); }
+        .modal-info-row.green { background: var(--success-bg); border: 1px solid #bbf7d0; }
+        .modal-info-row.green .label { color: var(--success); }
+        .modal-info-row.green .val { color: var(--success); }
+
+        /* ===== FOOTER ===== */
+        footer {
+            padding: 20px 28px; text-align: center;
+            font-size: 11px; color: #94a3b8;
+            border-top: 1px solid #e8ecf0; background: white; margin-top: 10px;
+        }
+
+        @media (max-width: 991px) {
+            :root { --sidebar-w: 200px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .main-wrap { margin-left: 0; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .content { padding: 18px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <div class="icon-wrap"><i class="fas fa-chart-line"></i></div>
+        <span>Admin Panel</span>
+    </div>
+    <nav>
+        <div class="nav-section-label">Menu</div>
+        <a href="{{ url_for('admin_dashboard') }}">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+        <a href="{{ url_for('admin_users') }}">
+            <i class="fas fa-users"></i> Kelola User
+        </a>
+        <a href="{{ url_for('admin_logs') }}" class="active">
+            <i class="fas fa-history"></i> Log Prediksi
+        </a>
+        <div class="nav-section-label">Lainnya</div>
+        <a href="{{ url_for('dashboard') }}">
+            <i class="fas fa-home"></i> Halaman User
+        </a>
+        <a href="{{ url_for('logout') }}">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        &copy; 2026 Properti Malang
+    </div>
+</div>
+
+<!-- MAIN -->
+<div class="main-wrap">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <div>
+            <h1><i class="fas fa-history me-2"></i>Log Prediksi Pengguna</h1>
+            <p>Riwayat seluruh aktivitas prediksi harga properti</p>
+        </div>
+        <div class="admin-badge">
+            <i class="fas fa-user-shield"></i> {{ current_user.name }}
+        </div>
+    </div>
+
+    
+
+        <!-- TABEL LOG -->
+        <div class="section-card">
+            <div class="sec-header">
+                <div class="sec-header-left">
+                    <i class="fas fa-table"></i>
+                    <h5>Riwayat Prediksi</h5>
+                </div>
+            </div>
+            <div class="filter-bar">
+                <div class="search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Cari nama user..." onkeyup="filterTable()">
+                </div>
+                <button class="btn-excel" id="btnExcel" onclick="downloadExcel()">
+                    <i class="fas fa-file-excel"></i> Download Excel
+                </button>
+            </div>
+            <div class="tbl-scroll">
+                <table class="tbl" id="logTable">
+                    <thead>
+                         <tr>
+                            <th>ID</th>
+                            <th>User</th>
+                            <th>Tanggal</th>
+                            <th>Input</th>
+                            <th>Harga Prediksi</th>
+                            <th>Harga Aktual</th>
+                            <th>Selisih</th>
+                            <th>Akurasi</th>
+                         </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td class="td-id">#{{ log.id }}</td>
+                            <td class="td-name">{{ log.user.name }}</td>
+                            <td class="td-time">{{ (log.timestamp + timedelta(hours=7)).strftime('%d/%m/%Y %H:%M') }} WIB</td>
+                            <td>
+                                <button type="button" class="btn-view-input" data-bs-toggle="modal" data-bs-target="#modal-{{ log.id }}">
+                                    <i class="fas fa-eye"></i> Lihat Input
+                                </button>
+                                <!-- MODAL -->
+                                <div class="modal fade" id="modal-{{ log.id }}" tabindex="-1" data-bs-backdrop="true">
+                                    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <span class="modal-title"><i class="fas fa-eye me-2"></i>Detail Input #{{ log.id }}</span>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:8px;">INPUT DATA</p>
+                                                <pre>{{ log.input_data | tojson(indent=2) }}</pre>
+                                                <div class="modal-info-row blue">
+                                                    <span class="label"><i class="fas fa-chart-line me-1"></i>Harga Prediksi</span>
+                                                    <span class="val">Rp {{ "{:,.0f}".format(log.predicted_price).replace(',', '.') }}</span>
+                                                </div>
+                                                {% if log.actual_price %}
+                                                <div class="modal-info-row green">
+                                                    <span class="label"><i class="fas fa-tag me-1"></i>Harga Aktual</span>
+                                                    <span class="val">Rp {{ "{:,.0f}".format(log.actual_price).replace(',', '.') }}</span>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+<td class="td-price">Rp {{ "{:,.0f}".format(log.predicted_price).replace(',', '.') }}</td>
+                            <td>
+                                {% if log.actual_price %}
+                                    <span style="font-weight:600;color:var(--success);">Rp {{ "{:,.0f}".format(log.actual_price).replace(',', '.') }}</span>
+                                {% else %}
+                                    <span class="badge-na">Tidak ada</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.actual_price %}
+                                    {% set selisih = (log.predicted_price - log.actual_price)|abs %}
+                                    <span style="font-weight:600;color:var(--warning);">
+                                        Rp {{ "{:,.0f}".format(selisih).replace(',', '.') }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge-na">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.actual_price %}
+                                    {% set akurasi = (1 - ((log.predicted_price - log.actual_price)|abs / log.actual_price)) * 100 %}
+                                    <div class="progress-wrap" style="min-width:90px;">
+                                        <div class="progress-bar-custom">
+                                            <div class="progress-fill" style="width: {{ [akurasi, 100]|min }}%;"></div>
+                                        </div>
+                                        <div class="progress-label">{{ akurasi|round(1) }}%</div>
+                                    </div>
+                                {% else %}
+                                    <span class="badge-na">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" style="text-align:center;padding:50px;color:#94a3b8;font-size:13px;">
+                                <i class="fas fa-inbox" style="font-size:24px;margin-bottom:10px;display:block;opacity:0.4;"></i>
+                                Belum ada log prediksi
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div><!-- end .content -->
+
+    <footer>
+        &copy; 2026 Sistem Prediksi Harga Properti Kota Malang &mdash; Admin Dashboard
+    </footer>
+
+</div><!-- end .main-wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+    // Fix modal scroll jump
+    document.querySelectorAll('.modal').forEach(function(el) {
+        el.addEventListener('show.bs.modal', function() {
+            document.body.style.overflow = 'auto';
+            document.body.style.paddingRight = '0';
+        });
+        el.addEventListener('hidden.bs.modal', function() {
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        });
+    });
+
+    // Search filter
+    function filterTable() {
+        var input = document.getElementById('searchInput').value.toLowerCase();
+        var rows = document.querySelectorAll('#logTable tbody tr');
+        rows.forEach(function(row) {
+            var name = row.querySelector('.td-name');
+            if (name) {
+                row.style.display = name.textContent.toLowerCase().includes(input) ? '' : 'none';
+            }
+        });
+    }
+
+    // Download Excel pakai SheetJS
+    function downloadExcel() {
+        var btn = document.getElementById('btnExcel');
+        btn.classList.add('loading');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyiapkan...';
+
+        try {
+            var rows = document.querySelectorAll('#logTable tbody tr');
+            var data = [['ID', 'User', 'Tanggal', 'Harga Prediksi', 'Harga Aktual', 'Selisih', 'Akurasi (%)']];
+
+rows.forEach(function(row) {
+                if (row.style.display === 'none') return;
+                var tds = row.querySelectorAll('td');
+                if (!tds || tds.length < 8) return;
+
+                var id       = tds[0].textContent.trim().replace('#', '');
+                var user     = tds[1].textContent.trim();
+                var tgl      = tds[2].textContent.trim();
+                var prediksi = tds[4].textContent.trim().replace(/[Rp\s\.]/g, '').replace(/,/g, '');
+                var aktual   = tds[5].textContent.trim();
+                var selisih  = tds[6].textContent.trim();
+                var akurasi  = tds[7].textContent.trim();
+
+                if (aktual === 'Tidak ada' || aktual === '—' || aktual === '-') {
+                    aktual = '';
+                } else {
+                    aktual = aktual.replace(/[Rp\s\.]/g, '').replace(/,/g, '');
+                }
+
+                if (selisih === '—' || selisih === '-') {
+                    selisih = '';
+                } else {
+                    selisih = selisih.replace(/[Rp\s\.]/g, '').replace(/,/g, '');
+                }
+
+                if (akurasi === '—' || akurasi === '-') {
+                    akurasi = '';
+                } else {
+                    akurasi = akurasi.replace('%', '').trim();
+                }
+
+                data.push([
+                    Number(id),
+                    user,
+                    tgl,
+                    prediksi ? Number(prediksi) : '',
+                    aktual   ? Number(aktual)   : '',
+                    selisih  ? Number(selisih)  : '',
+                    akurasi  ? Number(akurasi)  : ''
+                ]);
+            });
+
+            var wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.aoa_to_sheet(data);
+
+            // Lebar kolom
+            ws['!cols'] = [
+                { wch: 6 },
+                { wch: 22 },
+                { wch: 18 },
+                { wch: 22 },
+                { wch: 22 },
+                { wch: 22 },
+                { wch: 14 }
+            ];
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Log Prediksi');
+
+            // Nama file pakai tanggal hari ini
+            var today = new Date();
+            var tglStr = today.getFullYear() + '-' +
+                         String(today.getMonth()+1).padStart(2,'0') + '-' +
+                         String(today.getDate()).padStart(2,'0');
+            XLSX.writeFile(wb, 'log_prediksi_' + tglStr + '.xlsx');
+        } catch(e) {
+            alert('Gagal membuat file Excel. Coba lagi.');
+        }
+
+        setTimeout(function() {
+            btn.classList.remove('loading');
+            btn.innerHTML = '<i class="fas fa-file-excel"></i> Download Excel';
+        }, 1200);
+    }
+</script>
+</body>
+</html>

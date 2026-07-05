@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Prediksi Properti</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1E3A5F;
+            --primary-light: #2c4c7a;
+            --primary-pale: #eef3fa;
+            --success: #16a34a;
+            --success-bg: #f0fdf4;
+            --info: #0369a1;
+            --info-bg: #f0f9ff;
+            --warning: #b45309;
+            --warning-bg: #fffbeb;
+            --gray-bg: #f4f6f9;
+            --sidebar-w: 230px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--gray-bg);
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+            font-size: 14px;
+            color: #1a2332;
+            overflow-x: hidden;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            position: fixed;
+            top: 0; left: 0;
+            width: var(--sidebar-w);
+            height: 100vh;
+            background: var(--primary);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            overflow-y: auto;
+        }
+        .sidebar-brand {
+            padding: 22px 20px 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-brand .icon-wrap {
+            width: 34px; height: 34px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .sidebar-brand .icon-wrap i { color: white; font-size: 14px; }
+        .sidebar-brand span {
+            font-size: 15px; font-weight: 700;
+            color: white; letter-spacing: 0.1px;
+        }
+        .nav-section-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.35);
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            padding: 18px 20px 6px;
+        }
+        .sidebar nav { padding: 8px 10px; flex: 1; }
+        .sidebar nav a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 10px;
+            color: rgba(255,255,255,0.65);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 2px;
+            transition: background 0.15s, color 0.15s;
+        }
+        .sidebar nav a i { width: 18px; text-align: center; font-size: 13px; }
+        .sidebar nav a:hover { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.9); }
+        .sidebar nav a.active {
+            background: rgba(255,255,255,0.15);
+            color: white;
+        }
+        .sidebar-footer {
+            padding: 14px 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+        }
+
+        /* ===== MAIN ===== */
+        .main-wrap {
+            margin-left: var(--sidebar-w);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ===== TOPBAR ===== */
+        .topbar {
+            background: white;
+            border-bottom: 1px solid #e8ecf0;
+            padding: 16px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .topbar h1 {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 2px;
+        }
+        .topbar p { font-size: 12px; color: #64748b; }
+        .admin-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--primary-pale);
+            padding: 7px 14px;
+            border-radius: 40px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* ===== CONTENT ===== */
+        .content { padding: 26px 28px; flex: 1; }
+
+        /* ===== STAT CARDS ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: white;
+            border: 1px solid #e8ecf0;
+            border-radius: 16px;
+            padding: 18px 20px;
+            position: relative;
+            overflow: hidden;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+        .stat-card:hover {
+            box-shadow: 0 8px 24px rgba(30,58,95,0.08);
+            transform: translateY(-2px);
+        }
+        .stat-card .s-icon {
+            width: 38px; height: 38px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 14px;
+        }
+        .stat-card .s-icon i { font-size: 15px; }
+        .stat-card .s-icon.blue { background: var(--primary-pale); color: var(--primary); }
+        .stat-card .s-icon.green { background: var(--success-bg); color: var(--success); }
+        .stat-card .s-icon.teal { background: var(--info-bg); color: var(--info); }
+        .stat-card .s-icon.amber { background: var(--warning-bg); color: var(--warning); }
+        .stat-card .s-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .stat-card .s-val {
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+        .stat-card .s-val.blue { color: var(--primary); }
+        .stat-card .s-val.green { color: var(--success); }
+        .stat-card .s-val.teal { color: var(--info); }
+        .stat-card .s-val.amber { color: var(--warning); }
+        .stat-card .s-sub { font-size: 11px; color: #94a3b8; }
+        .stat-card .s-deco {
+            position: absolute;
+            right: -14px; bottom: -14px;
+            width: 72px; height: 72px;
+            border-radius: 50%;
+            opacity: 0.05;
+        }
+        .stat-card .s-deco.blue { background: var(--primary); }
+        .stat-card .s-deco.green { background: var(--success); }
+        .stat-card .s-deco.teal { background: var(--info); }
+        .stat-card .s-deco.amber { background: var(--warning); }
+
+        /* ===== SECTION CARD ===== */
+        .section-card {
+            background: white;
+            border: 1px solid #e8ecf0;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .section-card .sec-header {
+            padding: 16px 22px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-card .sec-header i { color: var(--primary); font-size: 14px; }
+        .section-card .sec-header h5 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a2332;
+            margin: 0;
+        }
+
+        /* ===== BADGE METODE ===== */
+        .badge-method-row { padding: 16px 22px; display: flex; flex-wrap: wrap; gap: 8px; }
+        .badge-m {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--primary-pale);
+            color: var(--primary);
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid rgba(30,58,95,0.1);
+            transition: background 0.15s;
+        }
+        .badge-m:hover { background: #dce8f5; }
+        .badge-m i { font-size: 11px; }
+
+        /* ===== TABEL ===== */
+        .tbl-scroll {
+            overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tbl-scroll::-webkit-scrollbar { height: 5px; }
+        .tbl-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+        .tbl-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+        table.tbl {
+            width: 100%;
+            min-width: 880px;
+            border-collapse: collapse;
+        }
+        table.tbl thead th {
+            background: #f8fafc;
+            padding: 10px 16px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e8ecf0;
+            white-space: nowrap;
+        }
+        table.tbl tbody tr {
+            border-bottom: 1px solid #f1f5f9;
+            transition: background 0.1s;
+        }
+        table.tbl tbody tr:last-child { border-bottom: none; }
+        table.tbl tbody tr:hover { background: #f8fafc; }
+        table.tbl td {
+            padding: 13px 16px;
+            font-size: 13px;
+            vertical-align: middle;
+            white-space: nowrap;
+            color: #334155;
+        }
+        table.tbl td:nth-child(3) { white-space: normal; min-width: 220px; }
+
+        .td-num { font-weight: 600; color: #94a3b8; font-size: 12px; }
+        .td-price { font-weight: 700; color: var(--primary); }
+        .td-user { font-weight: 600; color: #334155; }
+
+        .badge-loc {
+            background: var(--primary-pale);
+            color: var(--primary);
+            padding: 3px 9px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 4px;
+        }
+        .badge-na {
+            background: #f1f5f9;
+            color: #94a3b8;
+            padding: 3px 9px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .progress-wrap { min-width: 100px; }
+        .progress-bar-custom {
+            height: 5px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 3px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #16a34a, #22c55e);
+            border-radius: 10px;
+            transition: width 0.4s;
+        }
+        .progress-label { font-size: 11px; font-weight: 600; color: var(--success); }
+
+        .btn-view {
+            width: 30px; height: 30px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+            color: #64748b;
+        }
+        .btn-view:hover {
+            background: var(--primary-pale);
+            border-color: rgba(30,58,95,0.2);
+            color: var(--primary);
+        }
+        .btn-view i { font-size: 12px; }
+
+        /* ===== MODAL ===== */
+        .modal-content { border-radius: 16px; border: 1px solid #e8ecf0; box-shadow: 0 20px 60px rgba(0,0,0,0.12); }
+        .modal-header { background: #f8fafc; border-bottom: 1px solid #e8ecf0; border-radius: 16px 16px 0 0; padding: 16px 22px; }
+        .modal-title { font-size: 14px; font-weight: 700; color: var(--primary); }
+        .modal-body { padding: 20px 22px; }
+        .modal-body pre {
+            background: #f8fafc;
+            border: 1px solid #e8ecf0;
+            border-radius: 10px;
+            padding: 14px;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            padding: 20px 28px;
+            text-align: center;
+            font-size: 11px;
+            color: #94a3b8;
+            border-top: 1px solid #e8ecf0;
+            background: white;
+            margin-top: 10px;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 991px) {
+            :root { --sidebar-w: 200px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .content { padding: 18px; }
+        }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .main-wrap { margin-left: 0; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <div class="icon-wrap"><i class="fas fa-chart-line"></i></div>
+        <span>Admin Panel</span>
+    </div>
+    <nav>
+        <div class="nav-section-label">Menu</div>
+        <a href="{{ url_for('admin_dashboard') }}" class="active">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+        <a href="{{ url_for('admin_users') }}">
+            <i class="fas fa-users"></i> Kelola User
+        </a>
+        <a href="{{ url_for('admin_logs') }}">
+            <i class="fas fa-history"></i> Log Prediksi
+        </a>
+        <div class="nav-section-label">Lainnya</div>
+        <a href="{{ url_for('dashboard') }}">
+            <i class="fas fa-home"></i> Halaman User
+        </a>
+        <a href="{{ url_for('logout') }}">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        &copy; 2026 Properti Malang
+    </div>
+</div>
+
+<!-- MAIN -->
+<div class="main-wrap">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <div>
+            <h1><i class="fas fa-chart-line me-2"></i>Laporan Prediksi</h1>
+            <p>Ringkasan aktivitas prediksi harga properti</p>
+        </div>
+        <div class="admin-badge">
+            <i class="fas fa-user-shield"></i> {{ current_user.name }}
+        </div>
+    </div>
+
+    <div class="content">
+
+        <!-- STAT CARDS -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="s-deco blue"></div>
+                <div class="s-icon blue"><i class="fas fa-chart-line"></i></div>
+                <div class="s-label">Total Prediksi</div>
+                <div class="s-val blue">{{ logs|length }}</div>
+                <div class="s-sub">Keseluruhan sistem</div>
+            </div>
+            <div class="stat-card">
+                <div class="s-deco green"></div>
+                <div class="s-icon green"><i class="fas fa-users"></i></div>
+                <div class="s-label">Total User</div>
+                <div class="s-val green">{{ users|length }}</div>
+                <div class="s-sub">Terdaftar</div>
+            </div>
+            <div class="stat-card">
+                <div class="s-deco teal"></div>
+                <div class="s-icon teal"><i class="fas fa-database"></i></div>
+                <div class="s-label">Data Properti</div>
+                <div class="s-val teal">{{ total_data }}</div>
+                <div class="s-sub">Dataset</div>
+            </div>
+            <div class="stat-card">
+                <div class="s-deco amber"></div>
+                <div class="s-icon amber"><i class="fas fa-percent"></i></div>
+                <div class="s-label">Akurasi Rata²</div>
+                <div class="s-val amber">
+                    {% set ns = namespace(total=0, count=0) %}
+                    {% for log in logs if log.actual_price %}
+                        {% set ak = (1 - ((log.predicted_price - log.actual_price)|abs / log.actual_price)) * 100 %}
+                        {% set ns.total = ns.total + ak %}
+                        {% set ns.count = ns.count + 1 %}
+                    {% endfor %}
+                    {% if ns.count > 0 %}{{ (ns.total / ns.count)|round(1) }}%{% else %}N/A{% endif %}
+                </div>
+                <div class="s-sub">Jika ada data aktual</div>
+            </div>
+        </div>
+
+        <!-- METODE PREDIKSI -->
+        <div class="section-card">
+            <div class="sec-header">
+                <i class="fas fa-brain"></i>
+                <h5>Metode Prediksi</h5>
+            </div>
+            <div class="badge-method-row">
+                <span class="badge-m"><i class="fas fa-tree"></i> Random Forest</span>
+                <span class="badge-m"><i class="fas fa-chart-line"></i> Confidence ≥ 85%</span>
+                <span class="badge-m"><i class="fas fa-layer-group"></i> 4 Model Ensemble</span>
+                <span class="badge-m"><i class="fas fa-chart-simple"></i> R² terbaik: 0.85</span>
+            </div>
+        </div>
+
+        <!-- TABEL RIWAYAT -->
+        <div class="section-card">
+            <div class="sec-header">
+                <i class="fas fa-history"></i>
+                <h5>Riwayat Prediksi Properti</h5>
+            </div>
+            <div class="tbl-scroll">
+                <table class="tbl">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>User</th>
+                            <th>Input (LT/LB/KT/KM/Kec)</th>
+                            <th>Harga Prediksi</th>
+                            <th>Harga Aktual</th>
+                            <th>Akurasi</th>
+                            <th>Waktu</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td class="td-num">{{ loop.index }}</td>
+                            <td class="td-user">{{ log.user.name }}</td>
+                            <td>
+                                {% set inp = log.input_data | fromjson %}
+                                <span class="badge-loc">{{ inp.luas_tanah }}/{{ inp.luas_bangunan }} m²</span>
+                                {{ inp.kamar_tidur }} KT, {{ inp.kamar_mandi }} KM, {{ inp.kecamatan }}
+                            </td>
+                            <td class="td-price">Rp {{ "{:,.0f}".format(log.predicted_price).replace(',', '.') }}</td>
+                            <td>
+                                {% if log.actual_price %}
+                                    <span style="font-weight:600;">Rp {{ "{:,.0f}".format(log.actual_price).replace(',', '.') }}</span>
+                                {% else %}
+                                    <span class="badge-na">Tidak ada</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.actual_price %}
+                                    {% set akurasi = (1 - ((log.predicted_price - log.actual_price)|abs / log.actual_price)) * 100 %}
+                                    <div class="progress-wrap">
+                                        <div class="progress-bar-custom">
+                                            <div class="progress-fill" style="width: {{ [akurasi, 100]|min }}%;"></div>
+                                        </div>
+                                        <div class="progress-label">{{ akurasi|round(1) }}%</div>
+                                    </div>
+                                {% else %}
+                                    <span class="badge-na">—</span>
+                                {% endif %}
+                            </td>
+                            <td style="color:#94a3b8;font-size:12px;">{{ (log.timestamp + timedelta(hours=7)).strftime('%d/%m/%Y %H:%M') }} WIB</td>
+                            <td>
+                                <button class="btn-view" data-bs-toggle="modal" data-bs-target="#modal{{ log.id }}" title="Lihat detail">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+
+                                <!-- MODAL -->
+                                <div class="modal fade" id="modal{{ log.id }}" tabindex="-1" data-bs-backdrop="true">
+                                    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <span class="modal-title"><i class="fas fa-eye me-2"></i>Detail Prediksi #{{ log.id }}</span>
+                                                <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p style="font-size:12px;color:#64748b;margin-bottom:8px;font-weight:600;">INPUT DATA</p>
+                                                <pre>{{ log.input_data | tojson(indent=2) }}</pre>
+                                                <hr style="border-color:#f1f5f9;margin:16px 0;">
+                                                <div style="display:flex;flex-direction:column;gap:8px;">
+                                                    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f8fafc;border-radius:10px;border:1px solid #e8ecf0;">
+                                                        <span style="font-size:12px;color:#64748b;font-weight:600;">Harga Prediksi</span>
+                                                        <span style="font-size:14px;font-weight:700;color:var(--primary);">Rp {{ "{:,.0f}".format(log.predicted_price).replace(',', '.') }}</span>
+                                                    </div>
+                                                    {% if log.actual_price %}
+                                                    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;">
+                                                        <span style="font-size:12px;color:#16a34a;font-weight:600;">Harga Aktual</span>
+                                                        <span style="font-size:14px;font-weight:700;color:#16a34a;">Rp {{ "{:,.0f}".format(log.actual_price).replace(',', '.') }}</span>
+                                                    </div>
+                                                    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#fff7ed;border-radius:10px;border:1px solid #fed7aa;">
+                                                        <span style="font-size:12px;color:#b45309;font-weight:600;">Selisih</span>
+                                                        <span style="font-size:14px;font-weight:700;color:#b45309;">Rp {{ "{:,.0f}".format((log.predicted_price - log.actual_price)|abs).replace(',', '.') }}</span>
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" style="text-align:center;padding:50px;color:#94a3b8;font-size:13px;">
+                                <i class="fas fa-inbox" style="font-size:24px;margin-bottom:10px;display:block;opacity:0.4;"></i>
+                                Belum ada data prediksi
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div><!-- end .content -->
+
+    <footer>
+        &copy; 2026 Sistem Prediksi Harga Properti Kota Malang &mdash; Admin Dashboard
+    </footer>
+
+</div><!-- end .main-wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Fix modal scroll jump
+    var modalEls = document.querySelectorAll('.modal');
+    modalEls.forEach(function(el) {
+        el.addEventListener('show.bs.modal', function() {
+            document.body.style.overflow = 'auto';
+            document.body.style.paddingRight = '0';
+        });
+        el.addEventListener('hidden.bs.modal', function() {
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        });
+    });
+</script>
+</body>
+</html>
