@@ -1,13 +1,14 @@
-Flask==2.3.3
-Flask-Login==0.6.2
-Flask-SQLAlchemy==3.0.5
-Flask-Migrate==4.0.5
-flask-bcrypt==1.0.1
-pandas==2.2.2
-numpy==1.26.4
-scikit-learn==1.5.2
-matplotlib==3.9.2
-seaborn==0.13.2
-openpyxl==3.1.5
-joblib==1.4.2
-python-dotenv==1.0.1
+Flask
+Flask-Login
+Flask-SQLAlchemy      # ← TAMBAHKAN
+Flask-Migrate         # ← TAMBAHKAN
+Flask-Bcrypt          # ← TAMBAHKAN
+pandas
+numpy
+scikit-learn
+openpyxl
+joblib
+gunicorn
+setuptools
+wheel
+Werkzeug<3.0
