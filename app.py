@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate                
 from flask_bcrypt import Bcrypt                  
 from functools import wraps                      
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 import pickle
@@ -15,21 +15,15 @@ import warnings
 warnings.filterwarnings('ignore')
 
 app = Flask(__name__)
-import json
+
 def fromjson_filter(value):
     return json.loads(value)
 app.jinja_env.filters['fromjson'] = fromjson_filter
+
+# ============================================================
+# KONFIGURASI
+# ============================================================
 app.secret_key = 'your-secret-key-here-change-in-production'
-
-from datetime import timedelta
-
-@app.context_processor
-def inject_globals():
-    return dict(timedelta=timedelta)
-
-# ============================================================
-# KONFIGURASI DATABASE SQLITE
-# ============================================================
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///skripsi.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -41,21 +35,129 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+@app.context_processor
+def inject_globals():
+    return dict(timedelta=timedelta)
+
 # ============================================================
-# GLOBAL VARIABLES
+# LAZY LOADING - MODEL, ENCODER, DAN DATA
 # ============================================================
-df_properti = None
-encoder = None
-model = None
-all_models = []
-all_metrics = []
-feature_columns_list = []
+"""
+🔑 Kunci Hemat RAM:
+- Model hanya diload SAAT dipanggil (bukan di startup)
+- Data CSV hanya diload SAAT dibutuhkan
+- Cache disimpan setelah pertama kali dipanggil
+"""
+
+_models_cache = {}
+_encoder = None
+_df_properti = None
+_metrics_cache = None
+_feature_columns_cache = None
+
+def load_encoder():
+    """Load encoder secara lazy (hanya sekali)"""
+    global _encoder
+    if _encoder is None:
+        encoder_path = 'models/encoder_kecamatan.pkl'
+        if os.path.exists(encoder_path):
+            with open(encoder_path, 'rb') as f:
+                _encoder = pickle.load(f)
+            print(f"✅ Encoder loaded")
+        else:
+            print(f"⚠️ Encoder not found at {encoder_path}")
+    return _encoder
+
+def load_data():
+    """Load data properti secara lazy (hanya sekali)"""
+    global _df_properti
+    if _df_properti is None:
+        data_paths = [
+            'rumah123_cleans8_final.csv', 
+            'data/rumah123_cleans8_final.csv',
+            '../data/rumah123_cleans8_final.csv'
+        ]
+        for path in data_paths:
+            if os.path.exists(path):
+                _df_properti = pd.read_csv(path)
+                print(f"✅ Data loaded: {len(_df_properti)} baris dari {path}")
+                break
+        if _df_properti is None:
+            print("⚠️ Data properti tidak ditemukan!")
+            _df_properti = pd.DataFrame()
+    return _df_properti
+
+def load_model(index):
+    """Load model tertentu secara lazy"""
+    model_key = f'model_{index}'
+    if model_key not in _models_cache:
+        joblib_path = f'models/model_{index}.joblib'
+        pkl_path = f'models/model_{index}.pkl'
+        
+        if os.path.exists(joblib_path):
+            _models_cache[model_key] = joblib.load(joblib_path)
+            print(f"✅ Model {index} loaded from {joblib_path}")
+        elif os.path.exists(pkl_path):
+            with open(pkl_path, 'rb') as f:
+                _models_cache[model_key] = pickle.load(f)
+            print(f"✅ Model {index} loaded from {pkl_path}")
+        else:
+            print(f"⚠️ Model {index} not found")
+            _models_cache[model_key] = None
+    return _models_cache[model_key]
+
+def load_best_model():
+    """Load best model secara lazy"""
+    if 'best_model' not in _models_cache:
+        if os.path.exists('models/model_terbaik.joblib'):
+            _models_cache['best_model'] = joblib.load('models/model_terbaik.joblib')
+            print(f"✅ Best model loaded")
+        elif os.path.exists('models/model_terbaik.pkl'):
+            with open('models/model_terbaik.pkl', 'rb') as f:
+                _models_cache['best_model'] = pickle.load(f)
+            print(f"✅ Best model loaded from PKL")
+        else:
+            print(f"⚠️ Best model not found")
+            _models_cache['best_model'] = None
+    return _models_cache['best_model']
+
+def load_metrics():
+    """Load metrics secara lazy"""
+    global _metrics_cache
+    if _metrics_cache is None:
+        results_path = 'models/results_optimasi.pkl'
+        if os.path.exists(results_path):
+            with open(results_path, 'rb') as f:
+                _metrics_cache = pickle.load(f)
+            print(f"✅ Metrics loaded: {len(_metrics_cache)} models")
+        else:
+            print(f"⚠️ Metrics not found")
+            _metrics_cache = []
+    return _metrics_cache
+
+def load_feature_columns():
+    """Extract feature columns dari semua model secara lazy"""
+    global _feature_columns_cache
+    if _feature_columns_cache is None:
+        _feature_columns_cache = []
+        for i in range(4):
+            mdl = load_model(i)
+            if mdl is not None:
+                try:
+                    _feature_columns_cache.append(list(mdl.feature_names_in_))
+                except Exception as e:
+                    print(f"⚠️ Could not extract features from model {i}: {e}")
+                    _feature_columns_cache.append(None)
+            else:
+                _feature_columns_cache.append(None)
+    return _feature_columns_cache
 
 # ============================================================
 # FUNGSI PREPROCESSING
 # ============================================================
 def preprocess_for_prediction(kamar_tidur, kamar_mandi, luas_tanah, luas_bangunan, kecamatan):
-    global encoder, df_properti
+    encoder = load_encoder()
+    df = load_data()
     
     # Encode kecamatan
     if encoder:
@@ -77,21 +179,27 @@ def preprocess_for_prediction(kamar_tidur, kamar_mandi, luas_tanah, luas_banguna
     # Statistik kecamatan (dari training)
     kec_mean, kec_median, kec_std, kec_kelas = 0, 0, 0, 1
     if os.path.exists('models/statistik_kecamatan.pkl'):
-        with open('models/statistik_kecamatan.pkl', 'rb') as f:
-            statistik = pickle.load(f)
-        kec_mean = statistik['harga_mean'].get(kecamatan, 0)
-        kec_median = statistik['harga_median'].get(kecamatan, 0)
-        kec_std = statistik['harga_std'].get(kecamatan, 0)
-        kec_kelas = statistik['kelas'].get(kecamatan, 1)
+        try:
+            with open('models/statistik_kecamatan.pkl', 'rb') as f:
+                statistik = pickle.load(f)
+            kec_mean = statistik['harga_mean'].get(kecamatan, 0)
+            kec_median = statistik['harga_median'].get(kecamatan, 0)
+            kec_std = statistik['harga_std'].get(kecamatan, 0)
+            kec_kelas = statistik['kelas'].get(kecamatan, 1)
+        except:
+            pass
     
     # Makro
     kurs_usd = 16850.0
     inflasi_malang = 3.5
     inflasi_nasional = 3.5
-    if df_properti is not None and len(df_properti) > 0:
-        kurs_usd = df_properti['kurs_usd'].mean() if 'kurs_usd' in df_properti.columns else 16850
-        inflasi_malang = df_properti['inflasi_malang'].mean() if 'inflasi_malang' in df_properti.columns else 3.5
-        inflasi_nasional = df_properti['inflasi_nasional'].mean() if 'inflasi_nasional' in df_properti.columns else 3.5
+    if df is not None and len(df) > 0:
+        if 'kurs_usd' in df.columns:
+            kurs_usd = df['kurs_usd'].mean()
+        if 'inflasi_malang' in df.columns:
+            inflasi_malang = df['inflasi_malang'].mean()
+        if 'inflasi_nasional' in df.columns:
+            inflasi_nasional = df['inflasi_nasional'].mean()
     
     return {
         'kamar_tidur': int(kamar_tidur),
@@ -115,7 +223,9 @@ def preprocess_for_prediction(kamar_tidur, kamar_mandi, luas_tanah, luas_banguna
 def predict_price_with_model(selected_model, kamar_tidur, kamar_mandi, luas_tanah, luas_bangunan, kecamatan, model_features=None):
     if selected_model is None:
         return None
+    
     input_features = preprocess_for_prediction(kamar_tidur, kamar_mandi, luas_tanah, luas_bangunan, kecamatan)
+    
     try:
         if model_features:
             X_pred = pd.DataFrame([{col: input_features.get(col, 0) for col in model_features}])
@@ -130,13 +240,18 @@ def predict_price_with_model(selected_model, kamar_tidur, kamar_mandi, luas_tana
         return None
 
 def predict_price(kamar_tidur, kamar_mandi, luas_tanah, luas_bangunan, kecamatan):
-    global model, all_models, feature_columns_list
-    if len(all_models) > 3 and all_models[3] is not None:
-        model_to_use = all_models[3]
-        features_to_use = feature_columns_list[3] if len(feature_columns_list) > 3 else None
-        return predict_price_with_model(model_to_use, kamar_tidur, kamar_mandi, luas_tanah, luas_bangunan, kecamatan, features_to_use)
-    elif model is not None:
-        return predict_price_with_model(model, kamar_tidur, kamar_mandi, luas_tanah, luas_bangunan, kecamatan, None)
+    """Prediksi menggunakan model terbaik (lazy load)"""
+    best_model = load_best_model()
+    if best_model is not None:
+        return predict_price_with_model(best_model, kamar_tidur, kamar_mandi, luas_tanah, luas_bangunan, kecamatan, None)
+    
+    # Fallback ke model 3
+    model_3 = load_model(3)
+    if model_3 is not None:
+        features = load_feature_columns()
+        features_3 = features[3] if len(features) > 3 else None
+        return predict_price_with_model(model_3, kamar_tidur, kamar_mandi, luas_tanah, luas_bangunan, kecamatan, features_3)
+    
     return None
 
 def preprocess_dataframe(df):
@@ -149,31 +264,39 @@ def preprocess_dataframe(df):
     return df
 
 def get_actual_price_comparison(kamar_tidur, kamar_mandi, luas_tanah, luas_bangunan, kecamatan):
-    global df_properti
-    if df_properti is None or df_properti.empty:
+    df = load_data()
+    if df is None or df.empty:
         return None, 0, None
-    df = df_properti.copy()
+    
+    df = df.copy()
     harga_col = 'harga_bersih' if 'harga_bersih' in df.columns else 'harga'
     if harga_col not in df.columns:
         return None, 0, None
+    
     if 'kecamatan' in df.columns:
         similar = df[df['kecamatan'] == kecamatan]
     else:
         similar = df
+    
     if len(similar) == 0:
         return None, 0, None
+    
     if 'kamar_tidur' in similar.columns:
         similar_tidur = similar[similar['kamar_tidur'] == kamar_tidur]
         if len(similar_tidur) >= 3:
             similar = similar_tidur
+    
     if 'kamar_mandi' in similar.columns:
         similar_mandi = similar[similar['kamar_mandi'] == kamar_mandi]
         if len(similar_mandi) >= 3:
             similar = similar_mandi
+    
     if 'luas_tanah_m2' in similar.columns:
         similar = similar[(similar['luas_tanah_m2'] >= luas_tanah * 0.7) & (similar['luas_tanah_m2'] <= luas_tanah * 1.3)]
+    
     if 'luas_bangunan' in similar.columns:
         similar = similar[(similar['luas_bangunan'] >= luas_bangunan * 0.7) & (similar['luas_bangunan'] <= luas_bangunan * 1.3)]
+    
     if len(similar) > 0:
         harga_aktual_mean = float(similar[harga_col].mean())
         jumlah_data = len(similar)
@@ -185,92 +308,8 @@ def get_actual_price_comparison(kamar_tidur, kamar_mandi, luas_tanah, luas_bangu
             'count': jumlah_data
         }
         return harga_aktual_mean, jumlah_data, stats
-    return None, 0, None
-
-# ============================================================
-# LOAD DATA DAN MODEL
-# ============================================================
-print("="*60)
-print("🚀 LOADING DATA...")
-print("="*60)
-data_paths = ['rumah123_cleans8_final.csv', 'data/rumah123_cleans8_final.csv', '../data/rumah123_cleans8_final.csv']
-for path in data_paths:
-    if os.path.exists(path):
-        df_properti = pd.read_csv(path)
-        print(f"✅ Data properti loaded: {len(df_properti)} baris dari {path}")
-        break
-if df_properti is None:
-    print("⚠️ Data properti tidak ditemukan!")
-    df_properti = pd.DataFrame()
-print(f"📊 Total data properti: {len(df_properti)} baris")
-
-print("\n" + "="*60)
-print("🚀 LOADING 4 MODELS...")
-print("="*60)
-
-encoder_path = 'models/encoder_kecamatan.pkl'
-if os.path.exists(encoder_path):
-    with open(encoder_path, 'rb') as f:
-        encoder = pickle.load(f)
-    print(f"✅ Encoder loaded from {encoder_path}")
-else:
-    print(f"❌ Encoder not found at {encoder_path}")
-    encoder = None
-
-all_models = []
-model_names = ['Fisik Saja', '+ Makro', '+ Lokasi', '+ Semua']
-
-for i in range(4):
-    joblib_path = f'models/model_{i}.joblib'
-    pkl_path = f'models/model_{i}.pkl'
     
-    if os.path.exists(joblib_path):
-        all_models.append(joblib.load(joblib_path))
-        print(f"✅ Model {i} loaded: {model_names[i]} from {joblib_path}")
-    elif os.path.exists(pkl_path):
-        with open(pkl_path, 'rb') as f:
-            all_models.append(pickle.load(f))
-        print(f"✅ Model {i} loaded: {model_names[i]} from {pkl_path}")
-    else:
-        print(f"❌ Model {i} not found")
-        all_models.append(None)
-
-# Load best model
-if os.path.exists('models/model_terbaik.joblib'):
-    model = joblib.load('models/model_terbaik.joblib')
-    print(f"✅ Best model loaded from models/model_terbaik.joblib")
-elif os.path.exists('models/model_terbaik.pkl'):
-    with open('models/model_terbaik.pkl', 'rb') as f:
-        model = pickle.load(f)
-    print(f"✅ Best model loaded from models/model_terbaik.pkl")
-else:
-    model = all_models[3] if len(all_models) > 3 and all_models[3] else (all_models[0] if len(all_models) > 0 and all_models[0] else None)
-
-results_path = 'models/results_optimasi.pkl'
-if os.path.exists(results_path):
-    with open(results_path, 'rb') as f:
-        all_metrics = pickle.load(f)
-    print(f"✅ Metrics loaded from {results_path}")
-    print(f"📊 Total models in metrics: {len(all_metrics)}")
-    for i, m in enumerate(all_metrics):
-        print(f"   Model {i}: {m.get('name', 'Unknown')} - R²={m.get('r2', 0):.4f}")
-else:
-    print(f"❌ Metrics not found at {results_path}")
-    all_metrics = []
-
-feature_columns_list = []
-for i, mdl in enumerate(all_models):
-    if mdl is not None:
-        try:
-            features = list(mdl.feature_names_in_)
-            feature_columns_list.append(features)
-            print(f"✅ Features model {i} extracted: {len(features)} features")
-        except Exception as e:
-            feature_columns_list.append(None)
-            print(f"⚠️ Could not extract features from model {i}: {e}")
-    else:
-        feature_columns_list.append(None)
-print("="*60)
+    return None, 0, None
 
 # ============================================================
 # MODEL DATABASE
@@ -322,8 +361,8 @@ def admin_required(f):
 # METRICS FUNCTION
 # ============================================================
 def calculate_metrics():
-    global df_properti
-    if df_properti is None or df_properti.empty:
+    df = load_data()
+    if df is None or df.empty:
         return {
             'total_data': 0,
             'all_models': [],
@@ -331,7 +370,9 @@ def calculate_metrics():
             'price_stats': {},
             'last_update': datetime.now().strftime('%d %b %Y')
         }
+    
     models_metrics = []
+    all_metrics = load_metrics()
     if all_metrics:
         sorted_metrics = sorted(enumerate(all_metrics), key=lambda x: x[1].get('r2', 0), reverse=True)
         for rank, (original_id, metric) in enumerate(sorted_metrics):
@@ -359,12 +400,13 @@ def calculate_metrics():
                 'cv_r2_mean': 0,
                 'is_best': i == 0
             })
-    if 'kecamatan' in df_properti.columns:
-        kec_counts = df_properti['kecamatan'].value_counts().to_dict()
-        harga_col = 'harga_bersih' if 'harga_bersih' in df_properti.columns else 'harga'
-        if harga_col in df_properti.columns:
+    
+    if 'kecamatan' in df.columns:
+        kec_counts = df['kecamatan'].value_counts().to_dict()
+        harga_col = 'harga_bersih' if 'harga_bersih' in df.columns else 'harga'
+        if harga_col in df.columns:
             price_stats = {}
-            for kec, group in df_properti.groupby('kecamatan'):
+            for kec, group in df.groupby('kecamatan'):
                 price_stats[str(kec)] = {
                     'mean': float(group[harga_col].mean()),
                     'min': float(group[harga_col].min()),
@@ -376,10 +418,10 @@ def calculate_metrics():
     else:
         kec_counts = {}
         price_stats = {}
-# Rentang tanggal data
-    if 'tanggal_clean' in df_properti.columns:
+    
+    if 'tanggal_clean' in df.columns:
         try:
-            tanggal = pd.to_datetime(df_properti['tanggal_clean'], errors='coerce').dropna()
+            tanggal = pd.to_datetime(df['tanggal_clean'], errors='coerce').dropna()
             date_range = {
                 'from': tanggal.min().strftime('%d %b %Y'),
                 'to': tanggal.max().strftime('%d %b %Y')
@@ -390,22 +432,20 @@ def calculate_metrics():
         date_range = None
 
     return {
-        'total_data': len(df_properti),
+        'total_data': len(df),
         'all_models': models_metrics,
         'kecamatan_counts': kec_counts,
         'price_stats': price_stats,
         'last_update': datetime.now().strftime('%d %b %Y'),
         'date_range': date_range
     }
+
 # ============================================================
 # ROUTES
 # ============================================================
 @app.route('/')
 def index():
     return redirect(url_for('login'))
-
-
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -419,13 +459,10 @@ def login():
             if user.role == 'admin':
                 return redirect(url_for('admin_dashboard'))
             else:
-                return redirect(url_for('dashboard'))   # <-- user biasa ke sini
+                return redirect(url_for('dashboard'))
         else:
             flash('Email atau password salah!', 'danger')
     return render_template('login.html')
-
-
-
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -466,52 +503,19 @@ def prediksi():
 @app.route('/prediksi/<int:model_id>', methods=['GET', 'POST'])
 @login_required
 def prediksi_with_model(model_id):
-    global all_models, all_metrics, feature_columns_list
-    prediction = None
-    input_data = None
-    selected_model_id = model_id
     if model_id < 0 or model_id >= 4:
         model_id = 3
-    selected_model = None
-    selected_features = None
-    selected_metric = None
-    if model_id < len(all_models):
-        selected_model = all_models[model_id]
-    if model_id < len(feature_columns_list):
-        selected_features = feature_columns_list[model_id]
-    if model_id < len(all_metrics):
-        selected_metric = all_metrics[model_id]
     
-    # ============ TARUH DEBUG DI SINI ============
-    print("="*60)
-    print("DEBUG FITUR")
-    print("="*60)
-    print(f"Model ID: {model_id}")
+    # Lazy load model dan metrics
+    selected_model = load_model(model_id)
+    feature_columns = load_feature_columns()
+    all_metrics = load_metrics()
     
-    if selected_model is not None:
-        try:
-            expected_features = list(selected_model.feature_names_in_)
-            print(f"✅ Expected features dari model ({len(expected_features)}): {expected_features}")
-        except:
-            print("❌ Could not get feature_names_in_")
+    selected_features = feature_columns[model_id] if model_id < len(feature_columns) else None
+    selected_metric = all_metrics[model_id] if model_id < len(all_metrics) else None
     
-    if selected_features is not None:
-        print(f"✅ Selected features dari list ({len(selected_features)}): {selected_features}")
-    
-    # Test input
-    test_input = preprocess_for_prediction(3, 2, 100, 80, 'Lowokwaru')
-    print(f"✅ Input keys ({len(test_input)}): {list(test_input.keys())}")
-    
-    # Cek mana yang match
-    if selected_features:
-        match = set(test_input.keys()) & set(selected_features)
-        missing = set(selected_features) - set(test_input.keys())
-        extra = set(test_input.keys()) - set(selected_features)
-        print(f"✅ Match ({len(match)}): {match}")
-        print(f"❌ Missing ({len(missing)}): {missing}")
-        print(f"➕ Extra ({len(extra)}): {extra}")
-    print("="*60)
-    # ============ DEBUG END ============
+    prediction = None
+    input_data = None
     
     if request.method == 'POST':
         try:
@@ -522,6 +526,7 @@ def prediksi_with_model(model_id):
                 'luas_bangunan': float(request.form.get('luas_bangunan', 80)),
                 'kecamatan': request.form.get('kecamatan', 'Lowokwaru')
             }
+            
             if selected_model:
                 harga_prediksi = predict_price_with_model(
                     selected_model,
@@ -549,6 +554,7 @@ def prediksi_with_model(model_id):
                     input_data['luas_bangunan'],
                     input_data['kecamatan']
                 )
+                
                 model_name = selected_metric.get('name', f'Model {model_id+1}') if selected_metric else f'Model {model_id+1}'
                 prediction = {
                     'harga': harga_prediksi,
@@ -558,6 +564,7 @@ def prediksi_with_model(model_id):
                     'model_r2': selected_metric.get('r2', None) if selected_metric else None,
                     'model_mape': selected_metric.get('mape', None) if selected_metric else None
                 }
+                
                 if harga_aktual:
                     selisih = abs(harga_prediksi - harga_aktual)
                     persentase_selisih = (selisih / harga_aktual) * 100
@@ -572,7 +579,7 @@ def prediksi_with_model(model_id):
                         'stats': stats
                     })
                 
-                # ========== SIMPAN LOG PREDIKSI KE DATABASE ==========
+                # Simpan log
                 try:
                     input_json = json.dumps(input_data)
                     log_entry = PredictionLog(
@@ -583,10 +590,8 @@ def prediksi_with_model(model_id):
                     )
                     db.session.add(log_entry)
                     db.session.commit()
-                    print(f"✅ Log prediksi tersimpan untuk {current_user.email}")
                 except Exception as e:
                     print(f"⚠️ Gagal menyimpan log: {e}")
-                # =====================================================
             else:
                 flash('Gagal melakukan prediksi. Silakan coba lagi.', 'danger')
         except Exception as e:
@@ -596,7 +601,7 @@ def prediksi_with_model(model_id):
     return render_template('prediksi.html', 
                          prediction=prediction, 
                          user=current_user,
-                         selected_model_id=selected_model_id,
+                         selected_model_id=model_id,
                          metrics=metrics)
 
 # ============================================================
@@ -608,7 +613,8 @@ def prediksi_with_model(model_id):
 def admin_dashboard():
     all_users = User.query.all()
     all_logs = PredictionLog.query.order_by(PredictionLog.timestamp.desc()).all()
-    total_data = len(df_properti) if df_properti is not None else 0
+    df = load_data()
+    total_data = len(df) if df is not None else 0
     return render_template('admin_dashboard.html', users=all_users, logs=all_logs, total_data=total_data)
 
 @app.route('/admin/users')
@@ -647,20 +653,27 @@ def api_metrics():
 
 @app.route('/api/data')
 def api_data():
-    global df_properti, all_models, feature_columns_list, encoder
-    if df_properti is None or df_properti.empty:
+    df = load_data()
+    if df is None or df.empty:
         return jsonify({'error': 'No data'})
-    sample_size = min(50, len(df_properti))
-    sample = df_properti.sample(sample_size).copy()
+    
+    sample_size = min(50, len(df))
+    sample = df.sample(sample_size).copy()
     sample = preprocess_dataframe(sample)
+    
+    encoder = load_encoder()
     if encoder and 'kecamatan' in sample.columns:
         try:
             sample['kode_kecamatan'] = encoder.transform(sample['kecamatan'])
         except:
             kec_map = {'Lowokwaru':0, 'Klojen':1, 'Blimbing':2, 'Sukun':3, 'Kedungkandang':4}
             sample['kode_kecamatan'] = sample['kecamatan'].map(kec_map).fillna(0)
-    pred_model = all_models[3] if len(all_models) > 3 and all_models[3] else (all_models[0] if len(all_models) > 0 else None)
-    pred_features = feature_columns_list[3] if len(feature_columns_list) > 3 and feature_columns_list[3] else (feature_columns_list[0] if len(feature_columns_list) > 0 else None)
+    
+    # Gunakan best model untuk prediksi
+    pred_model = load_best_model()
+    feature_columns = load_feature_columns()
+    pred_features = feature_columns[3] if len(feature_columns) > 3 else None
+    
     if pred_model and pred_features:
         try:
             X_sample = pd.DataFrame()
@@ -676,6 +689,7 @@ def api_data():
             y_pred = sample['harga_bersih'].values if 'harga_bersih' in sample.columns else [0] * len(sample)
     else:
         y_pred = sample['harga_bersih'].values if 'harga_bersih' in sample.columns else [0] * len(sample)
+    
     return jsonify({
         'actual': sample['harga_bersih'].tolist() if 'harga_bersih' in sample.columns else [0] * len(sample),
         'predicted': y_pred.tolist(),
@@ -698,13 +712,9 @@ def api_predict():
         'harga_formatted': f"Rp {harga:,.0f}".replace(',', '.') if harga else None
     })
 
-# ============================================================
-# API ROUTE UNTUK DROPDOWN BERTINGKAT (AMBIL DATA DARI DATABASE)
-# ============================================================
 @app.route('/api/get_nilai_properti', methods=['POST'])
 def api_get_nilai_properti():
-    """API untuk cascading dropdown - mengambil opsi berdasarkan filter yang dipilih"""
-    global df_properti
+    df = load_data()
     
     try:
         data = request.get_json()
@@ -714,11 +724,8 @@ def api_get_nilai_properti():
         kamar_tidur = data.get('kamar_tidur')
         kamar_mandi = data.get('kamar_mandi')
         
-        # Filter dasar berdasarkan kecamatan
-        df_filtered = df_properti[df_properti['kecamatan'] == kecamatan]
+        df_filtered = df[df['kecamatan'] == kecamatan]
         
-        # Terapkan filter berdasarkan pilihan yang sudah ada
-        # PERHATIKAN: nama kolom di dataset adalah 'luas_tanah_m2' (bukan 'luas_tanah')
         if luas_tanah and luas_tanah != '':
             df_filtered = df_filtered[df_filtered['luas_tanah_m2'] == int(luas_tanah)]
         if luas_bangunan and luas_bangunan != '':
@@ -728,7 +735,6 @@ def api_get_nilai_properti():
         if kamar_mandi and kamar_mandi != '':
             df_filtered = df_filtered[df_filtered['kamar_mandi'] == int(kamar_mandi)]
         
-        # Ambil nilai unik (nama kolom disesuaikan dengan dataset)
         luas_tanah_list = sorted(df_filtered['luas_tanah_m2'].dropna().unique().tolist())
         luas_bangunan_list = sorted(df_filtered['luas_bangunan'].dropna().unique().tolist())
         kamar_tidur_list = sorted(df_filtered['kamar_tidur'].dropna().unique().tolist())
@@ -750,19 +756,32 @@ def api_get_nilai_properti():
         return jsonify({'success': False, 'error': str(e)})
 
 # ============================================================
-# MAIN
+# MAIN - PRODUCTION READY
 # ============================================================
 if __name__ == '__main__':
+    import os
+    
+    # 🔥 PERUBAHAN PENTING UNTUK DEPLOYMENT
+    port = int(os.environ.get('PORT', 8000))  # ← Gunakan port 8000
+    debug_mode = os.environ.get('FLASK_ENV') == 'development'
+    
     print("\n" + "="*60)
-    print("🚀 MENJALANKAN APLIKASI PREDIKSI HARGA PROPERTI")
+    print("🚀 APLIKASI PREDIKSI HARGA PROPERTI")
     print("="*60)
-    print(f"📊 Total data properti: {len(df_properti) if df_properti is not None else 0}")
-    print(f"📊 Encoder loaded: {'✅' if encoder else '❌'}")
-    print(f"📊 Models loaded: {len([m for m in all_models if m is not None])}/4")
-    print(f"📊 Metrics loaded: {len(all_metrics)}")
-    print(f"\n🌐 Akses di: http://localhost:5000")
-    print("🔐 Login Demo:")
-    print("   Email: admin@example.com")
-    print("   Password: admin123")
+    print(f"🌐 Port: {port}")
+    print(f"🔧 Debug: {debug_mode}")
+    print(f"💾 RAM Mode: Lazy Loading (hemat memory)")
     print("="*60)
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    
+    # 🔥 Buat database jika belum ada
+    with app.app_context():
+        db.create_all()
+        # Buat admin default jika belum ada
+        if not User.query.filter_by(email='admin@example.com').first():
+            hashed = bcrypt.generate_password_hash('admin123').decode('utf-8')
+            admin = User(email='admin@example.com', name='Admin', password=hashed, role='admin')
+            db.session.add(admin)
+            db.session.commit()
+            print("✅ Admin default created: admin@example.com / admin123")
+    
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)
